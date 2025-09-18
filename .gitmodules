@@ -1,0 +1,3 @@
+[submodule "uvhelper"]
+	path = uvhelper
+	url = ssh://user1@192.168.226.128/home/user1/workspace/uvhelper

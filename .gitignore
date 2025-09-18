@@ -28,3 +28,4 @@ LICENSE.txt
 Template/
 *.ioc
 /MDK-ARM/
+out.uvprojx

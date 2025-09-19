@@ -29,3 +29,6 @@ Template/
 *.ioc
 /MDK-ARM/
 out.uvprojx
+a.uvprojx
+out.xml
+*.Bak

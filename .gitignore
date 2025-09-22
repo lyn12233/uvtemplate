@@ -34,3 +34,5 @@ out.xml
 *.Bak
 /slab
 /stub
+*.doxy
+/out

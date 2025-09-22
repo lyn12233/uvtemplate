@@ -32,3 +32,5 @@ out.uvprojx
 a.uvprojx
 out.xml
 *.Bak
+/slab
+/stub

@@ -62,6 +62,7 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
+    int a=A;
 
   /* USER CODE BEGIN 1 */
 

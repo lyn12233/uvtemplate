@@ -37,3 +37,4 @@ out.xml
 *.doxy
 /out
 log.txt
+compile_commands.json

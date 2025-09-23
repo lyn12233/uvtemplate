@@ -44,7 +44,11 @@ void LED_init() {
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   HAL_GPIO_Init(GPIOB, &gi);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+}
+void delay(unsigned x) {
+  while (x--) {
+  }
 }
 /* USER CODE END PD */
 
@@ -107,7 +111,10 @@ int main(void) {
   /* USER CODE BEGIN WHILE */
   while (1) {
     /* USER CODE END WHILE */
-
+    // delay(0xffffffff);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+    // delay(0xffffffff);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

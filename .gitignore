@@ -36,3 +36,4 @@ out.xml
 /stub
 *.doxy
 /out
+log.txt

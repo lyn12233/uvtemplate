@@ -66,6 +66,7 @@ TIM_HandleTypeDef timer4_init(int period, int psc) {
   // start
   //  HAL_TIM_ConfigOCrefClear(TIM4, TIM_FLAG_UPDATE, 0);
   HAL_TIM_Base_Start(&th);
+  // __HAL_TIM_ENABLE(&th); // called within above
   return th;
 }
 /* USER CODE END PD */

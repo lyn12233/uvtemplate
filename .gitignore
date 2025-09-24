@@ -38,3 +38,4 @@ out.xml
 /out
 log.txt
 compile_commands.json
+/stdstub

@@ -97,7 +97,8 @@ void SystemClock_Config(void);
  * @retval int
  */
 int main(void) {
-  int a = A;
+  int a = A + A;
+  register int b __asm__("r0") = a;
 
   /* USER CODE BEGIN 1 */
 

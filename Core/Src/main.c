@@ -124,7 +124,7 @@ int main(void) {
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
   LED_init();
-  TIM_HandleTypeDef th = timer4_init(1e2, 1e2);
+  TIM_HandleTypeDef th = timer4_init(0xffff, 1e2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -139,8 +139,10 @@ int main(void) {
     if (__HAL_TIM_GET_FLAG(&th, TIM_FLAG_UPDATE)) {
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
       __HAL_TIM_CLEAR_FLAG(&th, TIM_FLAG_UPDATE);
+      // break;
     }
   }
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 3 */
 }
 

@@ -22,6 +22,8 @@
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
+#include "stm32f1xx_hal_rcc_ex.h"
+#include "stm32f1xx_hal_tim.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -49,6 +51,22 @@ void LED_init() {
 void delay(unsigned x) {
   while (x--) {
   }
+}
+TIM_HandleTypeDef timer4_init(int period, int psc) {
+  __HAL_RCC_TIM4_CLK_ENABLE();
+
+  TIM_Base_InitTypeDef tb =
+      (TIM_Base_InitTypeDef){.Period = period,
+                             .Prescaler = psc,
+                             .ClockDivision = TIM_CLOCKDIVISION_DIV1,
+                             .CounterMode = TIM_COUNTERMODE_UP};
+  TIM_HandleTypeDef th = (TIM_HandleTypeDef){.Instance = TIM4, .Init = tb};
+  HAL_TIM_Base_Init(&th);
+
+  // start
+  //  HAL_TIM_ConfigOCrefClear(TIM4, TIM_FLAG_UPDATE, 0);
+  HAL_TIM_Base_Start(&th);
+  return th;
 }
 /* USER CODE END PD */
 
@@ -105,6 +123,7 @@ int main(void) {
   /* Initialize all configured peripherals */
   /* USER CODE BEGIN 2 */
   LED_init();
+  TIM_HandleTypeDef th = timer4_init(1e2, 1e2);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -112,10 +131,14 @@ int main(void) {
   while (1) {
     /* USER CODE END WHILE */
     // delay(0xffffffff);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
     // delay(0xffffffff);
     // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
     /* USER CODE BEGIN 3 */
+    if (__HAL_TIM_GET_FLAG(&th, TIM_FLAG_UPDATE)) {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+      __HAL_TIM_CLEAR_FLAG(&th, TIM_FLAG_UPDATE);
+    }
   }
   /* USER CODE END 3 */
 }

@@ -14,7 +14,12 @@
 - CMSIS: common microcontroller software interface standard
 - GPIO: general purpose IO
 - HAL: hardware abstract level
+- HSE: high-speed external crystal
 - NVIC: embedded vector interrupt register
+- PLL: phase lock loop
+- RCC: reset and clock control
+- UEV: update event
+- UIF: update interrupt flag
 
 
 ### hardware info
@@ -34,6 +39,12 @@ arm32 cpu registers:
     5. PRIMASK, FAULTMASK, BASEPRI: interrupt registers
     6. CONTROL
 
+stm32 pins:
+ - power
+ - oscillator
+ - reset/download/boot
+ - gpio
+
 cm3 structure:
     1. cpu->code bus->flash/sram
     2. cpu->sysbus->AHB(advanced high-performance bus?)->RAM
@@ -51,9 +62,44 @@ stm32 naming:
 
 ### GPIO
 
-#### value types:
+#### mode
+- in floating
+- input pull up (IPU)
+- input pull down (IPD)
+- analog in (AIN)
+- (out / alternate function(AF)) (open drain(OD) / pull-push(PP))
+#### speed
+in stm32: 2M(serial), 10M(IIC), 50M(SPI)
+#### types and functions:
 
-GPIO_InitTypeDef, GPIO_PIN_x, GPIO_MODE_x
+GPIO_InitTypeDef, GPIO_PIN_x, GPIO_MODE_x, GPIO_SPEED_x, __HAL_RCC_GPIOx_CLK_ENABLE HAL_GPIO_Init(), HAL_GPIO_(Write/Toggle/Read)Pin,...
+
+> to lit LED, scheme shows that LED0--PB5 means GPIOB pin5
+
+### timers
+#### common timer modes:
+- regular
+- pwm output
+- input mode
+#### timers in stm
+- TIM6-7(basic)
+- TIM2-5(general)
+- TIM1,TIM8(advanced)
+> need more info
+
+#### timer registers
+- xxx_CRx(control reg)
+- xxx_DIER(DMA interrupt enabler reg)
+- xxx_SR(state reg)
+- xxx_EGR(event generator reg)
+- xxx_CNT
+- xxx_ARR(auto reload reg)
+- xxx_PSC(prescaler)
+for general regs:
+- xxx_CCR(capture-compare reg)
+#### timer clock sources
+CK_INT(internal), TIx(toggle input), ETR(external toggle), ITRx(internal toggle)
+#### timer behavior
 
 ## description of file layout:
 

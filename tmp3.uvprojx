@@ -338,7 +338,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_HAL_DRIVER,STM32F103xE,A=0</Define>
+              <Define>USE_HAL_DRIVER,STM32F103xE,A=0,HAL_TIM_MODULE_ENABLED</Define>
               <Undefine></Undefine>
               <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include</IncludePath>
             </VariousControls>
@@ -468,6 +468,16 @@
               <FileName>stm32f1xx_hal_exti.c</FileName>
               <FileType>1</FileType>
               <FilePath>./Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_exti.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_tim.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_tim_ex.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_tim_ex.c</FilePath>
             </File>
           </Files>
         </Group>

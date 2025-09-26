@@ -18,7 +18,6 @@ __pycache__/
 *.hex
 *.map
 *.sct
-LICENSE.txt
 /Drivers/CMSIS/docs
 /Drivers/CMSIS/DSP
 /Drivers/CMSIS/Lib

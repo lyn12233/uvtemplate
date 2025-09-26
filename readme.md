@@ -143,6 +143,33 @@ for general regs:
 CK_INT(internal), TIx(toggle input), ETR(external toggle), ITRx(internal toggle)
 #### timer behavior
 
+### transplanting FreeRTOS
+> this focuses on single-process stm32f103ze freertos transplantation
+
+freertos requires hardware specific files, including:
+ - FreeRTOSConfig.h for config
+   - CPU_CLOCK_HZ, TICK_RATE_HZ, 
+   - TOTAL_HEAP_SIZE, MINIMAL_STACK_SIZE
+   - ...
+ - port.c for port layer
+   - ...
+ - heap_x.c choose heap scheme
+ - board.c for peripheral setup
+
+files provided by freertos kernel:
+ - croutine.c: coroutine implementation, not suggested in 32-bit mcu
+ - list.c
+ - queue.c
+ - stream_buffer.c
+ - tasks.c
+ - timers.c
+ - /include
+   - xxx.h corresponding to xxx.c 
+   - FreeRTOS.h: structs for list_item, list, queue, event_group, timer, stream_buffer, etc.
+ - /portable/GCC/ARM_CM3/
+   - port.c
+   - portmacro.h
+
 ## description of file layout:
 
 - ./core: startup entry, main entry, and system ctors

@@ -10,14 +10,20 @@
 ### nomenclature
 
 - AHB: advanced high-performance bus
+- AIRCR: application interrupt/reset control register (c inst)
 - APB: advanced pci bridge
 - CMSIS: common microcontroller software interface standard
+- DCD: define constant dword (asm)
 - GPIO: general purpose IO
 - HAL: hardware abstract level
 - HSE: high-speed external crystal
+- HSI: high-speed internal crystal
+- NMI: non maskable interrupt
 - NVIC: embedded vector interrupt register
+- PendSV: pendable services
 - PLL: phase lock loop
 - RCC: reset and clock control
+- SCB: system control block (c inst)
 - UEV: update event
 - UIF: update interrupt flag
 
@@ -31,13 +37,19 @@ cortex-m3 core component:
     4. MPU: memory protection unit
     5. bus matrix?
 
-arm32 cpu registers:
-    1. r0-r12
-    2. r13: MSP
-    3. r14-r15
-    4. xPSR state register
-    5. PRIMASK, FAULTMASK, BASEPRI: interrupt registers
-    6. CONTROL
+registers in arm instruction set:
+    1. r0-r11
+    2. r12: IP (intra-procedure call scratch, for caller-saved calling convention)
+    3. r13: MSP (stack pointer)
+    4. r14: LR (link register)
+    5. r15: PC (program counter)
+    6. xPSR state register
+    7. PRIMASK, FAULTMASK, BASEPRI: interrupt registers
+    8. CONTROL
+
+modes in arm instruction set:
+    1. arm
+    2. thumb: compact 16-bit mode
 
 stm32 pins:
  - power
@@ -59,6 +71,36 @@ stm32 naming:
 - T/C/R/V/Z: 36pin/48pin/64pin/100pin/144pin
 - 4/6/8/B/C/D/E: 16K/32K/64K/128K/256K/384K/512K flash
 - ..
+
+### start schedules
+
+- board setup
+  - entry: startup_xxx.s
+    - defines stack: Stack_Mem - __initial_sp
+    - defines heap: __heap_base - Heap_Mem - __heap_limit
+    - defines interrupt vector: __Vectors - ... - __Vectors_End
+    - impl reset_handler: calls SystemInit and __main. [ WEAK ] means to be overridden
+    - impl NMI, SVC, PendSV handlers, fault handlers and irq handlers
+    - directly load stackheap info to registers
+  - SystemInit() in system_xxx.c: currently nop
+  - main() in main.c: hal_init, clock config, user initors and mainloop
+    - HAL_Init: initor for HAL lib
+      - NVIC: set priority grouping to '4'; writes to SBC->AIRCR reg VECTKEY and PRIGROUP fields [see also](https://blog.csdn.net/fzf1996/article/details/97815100)
+      - NVIC: set systick priority to 15.0
+      - MSP init to be overridden
+    - SystemClockConfig
+      - rcc: oscillator init: activate and use HSI, PLL not config'd
+      - rcc: clock config: for HCLK, SYSCLK, PCLK1/2, clock source from HSI, AHB and APB divider as default
+- GPIO setup
+  - __HAL_RCC_GPIOx_CLK_ENABLE: set RCC->APB2ENR with xxx_PxEN and wait reg update(read it)
+  - HAL_GPIO_Init: with GPIOx and init info(pin, mode, speed)
+- TIM(timer) setup
+  - __HAL_RCC_TIM4_CLK_ENABLE: ser RCC->APB1ENR with xxx_TIMxEN
+  - HAL_TIM_Base_Init: with TIMx and init info(period, prescaler, division, count_mode)
+    - TIM_Base_SetConfig
+    - set states to ready
+  - HAL_TIM_Base_Start: 
+    - __HAL_TIM_ENABLE: set ->CR1 segment to enable
 
 ### GPIO
 

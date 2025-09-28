@@ -38,3 +38,5 @@ out.xml
 log.txt
 compile_commands.json
 /stdstub
+*.xml
+test.c

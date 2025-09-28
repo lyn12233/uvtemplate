@@ -141,7 +141,7 @@ void UsageFault_Handler(void)
 /**
   * @brief This function handles System service call via SWI instruction.
   */
-void SVC_Handler(void)
+void __attribute__((weak)) SVC_Handler(void)
 {
   /* USER CODE BEGIN SVCall_IRQn 0 */
 
@@ -167,7 +167,7 @@ void DebugMon_Handler(void)
 /**
   * @brief This function handles Pendable request for system service.
   */
-void PendSV_Handler(void)
+void __attribute__((weak)) PendSV_Handler(void)
 {
   /* USER CODE BEGIN PendSV_IRQn 0 */
 

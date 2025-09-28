@@ -17,7 +17,7 @@
 ### FreeRTOS Kernel
 - **Source**: Amazon Web Services (formerly Real Time Engineers Ltd.)
 - **License**: MIT
-- **Location**: `Middlewares/FreeRTOS/`
+- **Location**: `FreeRTOS/`
 - **Notes**: Please refer to the original LICENSE file in the FreeRTOS directory
 
 ## Usage Requirements

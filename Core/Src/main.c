@@ -100,10 +100,10 @@ void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
 void SystemClock_Config(void);
 
 static void BlinkTask(void *p) {
-  TickType_t last_time = xTaskGetTickCount();
   unsigned char i = 0;
-  HAL_USART_Transmit(&m_uh, (void *)"tasking\\n", 9, -1);
   while (1) {
+    HAL_USART_Transmit(&m_uh, (void *)"tasking\\n", 9, -1);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
     i++;
   }
 }

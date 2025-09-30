@@ -41,6 +41,8 @@
  * See http://www.freertos.org/a00110.html.
  *----------------------------------------------------------*/
 
+#include "stm32f1xx.h" //for __BKPT()
+
 /* Ensure stdint is only used by the compiler, and not the assembler. */
 #if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__) || 1
 #include <stdint.h>

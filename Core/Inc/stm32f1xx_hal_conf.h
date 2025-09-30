@@ -25,6 +25,8 @@
 extern "C" {
 #endif
 
+#include "stm32f1xx_hal_def.h"
+
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
@@ -65,8 +67,8 @@ extern "C" {
 /*#define HAL_SPI_MODULE_ENABLED   */
 /*#define HAL_SRAM_MODULE_ENABLED   */
 #define HAL_TIM_MODULE_ENABLED
-/*#define HAL_UART_MODULE_ENABLED   */
-/*#define HAL_USART_MODULE_ENABLED   */
+#define HAL_UART_MODULE_ENABLED
+#define HAL_USART_MODULE_ENABLED
 /*#define HAL_WWDG_MODULE_ENABLED   */
 
 #define HAL_CORTEX_MODULE_ENABLED

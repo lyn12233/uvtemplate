@@ -1,44 +1,27 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
+// local
 #include "main.h"
+
+// system
+#include "stddef.h"
 #include "stm32_hal_legacy.h"
 #include "stm32f103xe.h"
+#include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_def.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_rcc_ex.h"
 #include "stm32f1xx_hal_tim.h"
+#include "stm32f1xx_hal_usart.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #ifndef __ARM_ACLE
 #error "ACLE intrinsics support not enabled."
 #endif
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
+// 3rd party
+#include "FreeRTOS.h"
+#include "task.h"
 
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
+// GPIO-led init
 void LED_init() {
   GPIO_InitTypeDef gi = (GPIO_InitTypeDef){
       .Pin = GPIO_PIN_5, .Mode = GPIO_MODE_OUTPUT_PP, .Speed = GPIO_SPEED_LOW};
@@ -46,13 +29,12 @@ void LED_init() {
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   HAL_GPIO_Init(GPIOB, &gi);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
-void delay(unsigned x) {
-  while (x--) {
-  }
-}
-TIM_HandleTypeDef timer4_init(int period, int psc) {
+
+// timer-TIM4 init and start
+TIM_HandleTypeDef m_th;
+void timer4_init(int period, int psc) {
   __HAL_RCC_TIM4_CLK_ENABLE();
 
   TIM_Base_InitTypeDef tb =
@@ -64,86 +46,113 @@ TIM_HandleTypeDef timer4_init(int period, int psc) {
   HAL_TIM_Base_Init(&th);
 
   // start
-  //  HAL_TIM_ConfigOCrefClear(TIM4, TIM_FLAG_UPDATE, 0);
   HAL_TIM_Base_Start(&th);
-  return th;
+
+  m_th = th;
 }
-/* USER CODE END PD */
 
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
+// gpio-uart1 init
+USART_HandleTypeDef m_uh;
+void printer_init() {
+  __HAL_RCC_USART1_CLK_ENABLE();
+  m_uh = (USART_HandleTypeDef){
+      .Instance = USART1,
+      .Init =
+          (USART_InitTypeDef){
+              .BaudRate = 9600,
+              .WordLength = USART_WORDLENGTH_8B,
+              .StopBits = USART_STOPBITS_1,
+              .Parity = USART_PARITY_NONE,
+              .Mode = USART_MODE_TX_RX,
+          },
+  };
+  HAL_StatusTypeDef res = HAL_USART_Init(&m_uh);
+  if (res != HAL_OK) {
+    while (1) {
+      // unreached
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+    }
+  }
+}
+void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-/* USER CODE END PM */
+  if (husart->Instance == USART1) {
+    __HAL_RCC_GPIOA_CLK_ENABLE(); // Enable GPIO clock (USART1 usually on
+                                  // PA9/PA10)
 
-/* Private variables ---------------------------------------------------------*/
+    // Configure TX Pin (usually PA9 for USART1)
+    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP; // Alternate Function Push-Pull
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-/* USER CODE BEGIN PV */
+    // Configure RX Pin (usually PA10 for USART1) - even if you're only
+    // transmitting
+    GPIO_InitStruct.Pin = GPIO_PIN_10;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_INPUT; // Or GPIO_MODE_INPUT for RX
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  }
+}
 
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
+//
+//
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
 
-/* USER CODE END PFP */
+static void BlinkTask(void *p) {
+  TickType_t last_time = xTaskGetTickCount();
+  unsigned char i = 0;
+  HAL_USART_Transmit(&m_uh, (void *)"tasking\\n", 9, -1);
+  while (1) {
+    i++;
+  }
+}
 
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
+//
+// mainloop
 
-/* USER CODE END 0 */
-
-/**
- * @brief  The application entry point.
- * @retval int
- */
 int main(void) {
   int a = A + A + A;
   register int b __asm__("r0") = a;
 
-  /* USER CODE BEGIN 1 */
+  HAL_Init(); // HAL lib init
 
-  /* USER CODE END 1 */
+  SystemClock_Config(); // config sys clock
 
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
-   */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
+  //
+  // initialize all configured peripherals
   LED_init();
-  TIM_HandleTypeDef th = timer4_init(0xffff, 1e2);
-  /* USER CODE END 2 */
+  timer4_init(0xffff, 1e2);
+  printer_init();
 
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  //
+  // freertos mainloop
+  BaseType_t res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE,
+                               NULL, configMAX_PRIORITIES - 2, NULL);
+
+  if (res != pdPASS) {
+    while (1) {
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+      HAL_USART_Transmit(&m_uh, (void *)"taskcreate failed\\n", 20, -1);
+    }
+  } else {
+    HAL_USART_Transmit(&m_uh, (void *)"taskcreate complete\\n", 22, -1);
+  }
+  vTaskStartScheduler();
   while (1) {
-    /* USER CODE END WHILE */
-    // delay(0xffffffff);
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-    // delay(0xffffffff);
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-    /* USER CODE BEGIN 3 */
-    if (__HAL_TIM_GET_FLAG(&th, TIM_FLAG_UPDATE)) {
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+    HAL_USART_Transmit(&m_uh, (void *)"task all done\\n", 9, -1);
+  }
+
+  while (1) {
+    if (__HAL_TIM_GET_FLAG(&m_th, TIM_FLAG_UPDATE)) {
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-      __HAL_TIM_CLEAR_FLAG(&th, TIM_FLAG_UPDATE);
-      // break;
+      __HAL_TIM_CLEAR_FLAG(&m_th, TIM_FLAG_UPDATE);
+      const void *data = "here\\n";
+      HAL_USART_Transmit(&m_uh, data, 6, -1);
     }
   }
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-  /* USER CODE END 3 */
+  // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
 
 /**
@@ -178,10 +187,6 @@ void SystemClock_Config(void) {
     Error_Handler();
   }
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
  * @brief  This function is executed in case of error occurrence.

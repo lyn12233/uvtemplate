@@ -146,15 +146,16 @@ CK_INT(internal), TIx(toggle input), ETR(external toggle), ITRx(internal toggle)
 ### transplanting FreeRTOS
 > this focuses on single-process stm32f103ze freertos transplantation
 
-freertos requires hardware specific files, including:
+freertos requires hardware specific files, including(as officially recommended):
  - FreeRTOSConfig.h for config
    - CPU_CLOCK_HZ, TICK_RATE_HZ, 
    - TOTAL_HEAP_SIZE, MINIMAL_STACK_SIZE
-   - ...
- - port.c for port layer
-   - ...
+   - USE_xxx
+ - port.c for port layer (describing /portable/...)
+   - vPortSetupTimerInterrupt: 
  - heap_x.c choose heap scheme
- - board.c for peripheral setup
+
+> note: in one previous code SysTick_Handler to defined as a macro to vPortSysTickHandler(or whatever). SysTick_Handler is the actual handler in interrupt vector table (in startup_xxx.s). it is necessary to make sure SysTick_Handler is the only and determinstic system tick clock handler, which should notify tick to both HAL (inc_tick) and FreeRTOS(...tick_handler) 
 
 files provided by freertos kernel:
  - croutine.c: coroutine implementation, not suggested in 32-bit mcu

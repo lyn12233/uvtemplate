@@ -2,7 +2,9 @@
 #include "main.h"
 
 // system
-#include "stddef.h"
+#include <stddef.h>
+#include <stdio.h>
+
 #include "stm32_hal_legacy.h"
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal.h"

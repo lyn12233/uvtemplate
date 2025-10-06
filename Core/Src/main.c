@@ -1,23 +1,5 @@
-/* USER CODE BEGIN Header */
-/**
- ******************************************************************************
- * @file           : main.c
- * @brief          : Main program body
- ******************************************************************************
- * @attention
- *
- * Copyright (c) 2025 STMicroelectronics.
- * All rights reserved.
- *
- * This software is licensed under terms that can be found in the LICENSE file
- * in the root directory of this software component.
- * If no LICENSE file comes with this software, it is provided AS-IS.
- *
- ******************************************************************************
- */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
+
 #include "stm32_hal_legacy.h"
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal_gpio.h"
@@ -25,20 +7,10 @@
 #include "stm32f1xx_hal_rcc_ex.h"
 #include "stm32f1xx_hal_tim.h"
 
-/* Private includes ----------------------------------------------------------*/
-/* USER CODE BEGIN Includes */
 #ifndef __ARM_ACLE
 #error "ACLE intrinsics support not enabled."
 #endif
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
 void LED_init() {
   GPIO_InitTypeDef gi = (GPIO_InitTypeDef){
       .Pin = GPIO_PIN_5, .Mode = GPIO_MODE_OUTPUT_PP, .Speed = GPIO_SPEED_LOW};
@@ -48,50 +20,36 @@ void LED_init() {
   HAL_GPIO_Init(GPIOB, &gi);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
 }
-void delay(unsigned x) {
-  while (x--) {
-  }
-}
-TIM_HandleTypeDef timer4_init(int period, int psc) {
+
+TIM_HandleTypeDef m_th;
+void timer4_init(int period, int psc) {
   __HAL_RCC_TIM4_CLK_ENABLE();
 
-  TIM_Base_InitTypeDef tb =
-      (TIM_Base_InitTypeDef){.Period = period,
-                             .Prescaler = psc,
-                             .ClockDivision = TIM_CLOCKDIVISION_DIV1,
-                             .CounterMode = TIM_COUNTERMODE_UP};
-  TIM_HandleTypeDef th = (TIM_HandleTypeDef){.Instance = TIM4, .Init = tb};
+  TIM_Base_InitTypeDef tb = (TIM_Base_InitTypeDef){
+      .Period = period,
+      .Prescaler = psc,
+      .ClockDivision = TIM_CLOCKDIVISION_DIV1,
+      .CounterMode = TIM_COUNTERMODE_UP,
+  };
+  TIM_HandleTypeDef th = (TIM_HandleTypeDef){
+      .Instance = TIM4,
+      .Init = tb,
+  };
+  TIM_OC_InitTypeDef toc = (TIM_OC_InitTypeDef){
+      .OCMode = TIM_OCMODE_PWM1,
+      .Pulse = 500,
+      .OCPolarity = TIM_OCPOLARITY_HIGH,
+      .OCFastMode = TIM_OCFAST_DISABLE,
+  };
   HAL_TIM_Base_Init(&th);
-
-  // start
-  //  HAL_TIM_ConfigOCrefClear(TIM4, TIM_FLAG_UPDATE, 0);
+  HAL_TIM_PWM_Init(&th);
+  HAL_TIM_PWM_ConfigChannel(&th, &toc, TIM_CHANNEL_1);
   HAL_TIM_Base_Start(&th);
-  // __HAL_TIM_ENABLE(&th); // called within above
-  return th;
+  HAL_TIM_PWM_Start(&th, TIM_CHANNEL_1);
+  m_th = th;
 }
-/* USER CODE END PD */
 
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
-
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
-
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-/* USER CODE BEGIN PFP */
-
-/* USER CODE END PFP */
-
-/* Private user code ---------------------------------------------------------*/
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 
 /**
  * @brief  The application entry point.
@@ -100,51 +58,13 @@ void SystemClock_Config(void);
 int main(void) {
   int a = A + A + A;
   register int b __asm__("r0") = a;
-
-  /* USER CODE BEGIN 1 */
-
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick.
-   */
   HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
-  /* USER CODE BEGIN 2 */
   LED_init();
-  TIM_HandleTypeDef th = timer4_init(0xffff, 1e2);
-  /* USER CODE END 2 */
-
-  /* Infinite loop */
-  /* USER CODE BEGIN WHILE */
+  timer4_init(0xffff, 1e2);
   while (1) {
-    /* USER CODE END WHILE */
-    // delay(0xffffffff);
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-    // delay(0xffffffff);
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-    /* USER CODE BEGIN 3 */
-    if (__HAL_TIM_GET_FLAG(&th, TIM_FLAG_UPDATE)) {
-      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-      __HAL_TIM_CLEAR_FLAG(&th, TIM_FLAG_UPDATE);
-      // break;
-    }
   }
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-  /* USER CODE END 3 */
 }
 
 /**
@@ -179,10 +99,6 @@ void SystemClock_Config(void) {
     Error_Handler();
   }
 }
-
-/* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
 
 /**
  * @brief  This function is executed in case of error occurrence.

@@ -3,6 +3,7 @@
 #include "stm32_hal_legacy.h"
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal_gpio.h"
+#include "stm32f1xx_hal_gpio_ex.h"
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_rcc_ex.h"
 #include "stm32f1xx_hal_tim.h"
@@ -13,40 +14,47 @@
 
 void LED_init() {
   GPIO_InitTypeDef gi = (GPIO_InitTypeDef){
-      .Pin = GPIO_PIN_5, .Mode = GPIO_MODE_OUTPUT_PP, .Speed = GPIO_SPEED_LOW};
-  __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
+      .Pin = GPIO_PIN_5, //
+      .Mode = GPIO_MODE_AF_PP,
+      .Speed = GPIO_SPEED_HIGH, //
+      .Pull = GPIO_NOPULL,
+  };
+
+  __HAL_RCC_GPIOB_CLK_ENABLE(); // led0-pb5-timer3channel2
 
   HAL_GPIO_Init(GPIOB, &gi);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+  // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
 
-TIM_HandleTypeDef m_th;
-void timer4_init(int period, int psc) {
-  __HAL_RCC_TIM4_CLK_ENABLE();
-
-  TIM_Base_InitTypeDef tb = (TIM_Base_InitTypeDef){
-      .Period = period,
-      .Prescaler = psc,
+TIM_HandleTypeDef m_timer3h;
+void timer3_init(int period, int psc, float duty) {
+  TIM_Base_InitTypeDef timer_base = (TIM_Base_InitTypeDef){
+      .Period = period - 1,
+      .Prescaler = psc - 1,
       .ClockDivision = TIM_CLOCKDIVISION_DIV1,
       .CounterMode = TIM_COUNTERMODE_UP,
+      .RepetitionCounter = 0,
   };
-  TIM_HandleTypeDef th = (TIM_HandleTypeDef){
-      .Instance = TIM4,
-      .Init = tb,
+  m_timer3h = (TIM_HandleTypeDef){
+      .Instance = TIM3,
+      .Init = timer_base,
   };
-  TIM_OC_InitTypeDef toc = (TIM_OC_InitTypeDef){
+  TIM_OC_InitTypeDef timer_compare = (TIM_OC_InitTypeDef){
       .OCMode = TIM_OCMODE_PWM1,
-      .Pulse = 500,
+      .Pulse = (float)period * duty,
       .OCPolarity = TIM_OCPOLARITY_HIGH,
+      .OCNPolarity = TIM_OCNPOLARITY_HIGH,
       .OCFastMode = TIM_OCFAST_DISABLE,
+      .OCIdleState = TIM_OCIDLESTATE_RESET,
+      .OCNIdleState = TIM_OCNIDLESTATE_RESET,
   };
-  HAL_TIM_Base_Init(&th);
-  HAL_TIM_PWM_Init(&th);
-  HAL_TIM_PWM_ConfigChannel(&th, &toc, TIM_CHANNEL_1);
-  HAL_TIM_Base_Start(&th);
-  HAL_TIM_PWM_Start(&th, TIM_CHANNEL_1);
-  m_th = th;
+  __HAL_RCC_TIM3_CLK_ENABLE();
+  __HAL_RCC_AFIO_CLK_ENABLE();
+  __HAL_AFIO_REMAP_TIM3_PARTIAL();
+  HAL_TIM_Base_Init(&m_timer3h);
+  HAL_TIM_PWM_Init(&m_timer3h);
+  HAL_TIM_PWM_ConfigChannel(&m_timer3h, &timer_compare, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&m_timer3h, TIM_CHANNEL_2);
 }
 
 void SystemClock_Config(void);
@@ -56,14 +64,17 @@ void SystemClock_Config(void);
  * @retval int
  */
 int main(void) {
-  int a = A + A + A;
-  register int b __asm__("r0") = a;
   HAL_Init();
   SystemClock_Config();
+
   LED_init();
-  timer4_init(0xffff, 1e2);
+  timer3_init(1e2, 1e2, 0.5);
+
+  // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+
   while (1) {
   }
+
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
 

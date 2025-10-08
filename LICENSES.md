@@ -20,5 +20,11 @@
 - **Location**: `FreeRTOS/`
 - **Notes**: Please refer to the original LICENSE file in the FreeRTOS directory
 
+### ioLibrary
+- **Source**: WIZnet
+- **License**: MIT
+- **Location**: `IOLibrary/`
+- **Notes**: Please refer to the original LICENSE file in the FreeRTOS directory
+
 ## Usage Requirements
 When distributing this project, you must include all original license notices from each component.

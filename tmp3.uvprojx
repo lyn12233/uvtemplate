@@ -53,7 +53,7 @@
           <CreateExecutable>1</CreateExecutable>
           <CreateLib>0</CreateLib>
           <CreateHexFile>1</CreateHexFile>
-          <DebugInformation>1</DebugInformation>
+          <DebugInformation>0</DebugInformation>
           <BrowseInformation>1</BrowseInformation>
           <ListingPath></ListingPath>
           <HexFormatSelection>1</HexFormatSelection>
@@ -81,7 +81,7 @@
           </BeforeMake>
           <AfterMake>
             <RunUserProg1>0</RunUserProg1>
-            <RunUserProg2>1</RunUserProg2>
+            <RunUserProg2>0</RunUserProg2>
             <UserProg1Name></UserProg1Name>
             <UserProg2Name></UserProg2Name>
             <UserProg1Dos16Mode>0</UserProg1Dos16Mode>
@@ -129,16 +129,16 @@
         </DebugOption>
         <Utilities>
           <Flash1>
-            <UseTargetDll>1</UseTargetDll>
-            <UseExternalTool>0</UseExternalTool>
-            <RunIndependent>0</RunIndependent>
+            <UseTargetDll>0</UseTargetDll>
+            <UseExternalTool>1</UseExternalTool>
+            <RunIndependent>1</RunIndependent>
             <UpdateFlashBeforeDebugging>1</UpdateFlashBeforeDebugging>
             <Capability>1</Capability>
-            <DriverSelection>4101</DriverSelection>
+            <DriverSelection>4096</DriverSelection>
           </Flash1>
           <bUseTDR>1</bUseTDR>
           <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -338,9 +338,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_HAL_DRIVER,STM32F103xE,A=0</Define>
+              <Define>USE_HAL_DRIVER,STM32F103xE,A=0,_WIZCHIP_=5500</Define>
               <Undefine></Undefine>
-              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task</IncludePath>
+              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task;.\IOLibrary\Ethernet;.\IOLibrary\Application\loopback;.\IOLibrary\Application\multicast;.\IOLibrary\Ethernet\W5500</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -783,6 +783,36 @@
               <FileName>port.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\FreeRTOS\port\port.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>iolibrary</GroupName>
+          <Files>
+            <File>
+              <FileName>loopback.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\IOLibrary\Application\loopback\loopback.c</FilePath>
+            </File>
+            <File>
+              <FileName>multicast.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\IOLibrary\Application\multicast\multicast.c</FilePath>
+            </File>
+            <File>
+              <FileName>w5500.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\IOLibrary\Ethernet\W5500\w5500.c</FilePath>
+            </File>
+            <File>
+              <FileName>socket.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\IOLibrary\Ethernet\socket.c</FilePath>
+            </File>
+            <File>
+              <FileName>wizchip_conf.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\IOLibrary\Ethernet\wizchip_conf.c</FilePath>
             </File>
           </Files>
         </Group>

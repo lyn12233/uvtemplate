@@ -34,45 +34,9 @@ void LED_init() {
   GPIO_InitTypeDef led1_init = led0_init;
 
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOE_CLK_ENABLE();
 
   HAL_GPIO_Init(GPIOB, &led0_init); // pb5
-  HAL_GPIO_Init(GPIOE, &led1_init); // pe5
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET);
-}
-
-// timer init and gpio remap
-TIM_HandleTypeDef m_timer3h;
-void timer3_init(int period, int psc, float duty) {
-  TIM_Base_InitTypeDef timer_base = (TIM_Base_InitTypeDef){
-      .Period = period - 1,
-      .Prescaler = psc - 1,
-      .ClockDivision = TIM_CLOCKDIVISION_DIV1,
-      .CounterMode = TIM_COUNTERMODE_UP,
-      .RepetitionCounter = 0,
-      .AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE,
-  };
-  m_timer3h = (TIM_HandleTypeDef){
-      .Instance = TIM3,
-      .Init = timer_base,
-  };
-  TIM_OC_InitTypeDef timer_compare = (TIM_OC_InitTypeDef){
-      .OCMode = TIM_OCMODE_PWM1,
-      .Pulse = (float)period * duty,
-      .OCPolarity = TIM_OCPOLARITY_LOW,
-      .OCFastMode = TIM_OCFAST_DISABLE,
-      .OCIdleState = TIM_OCIDLESTATE_RESET,
-  };
-  __HAL_RCC_TIM3_CLK_ENABLE();
-  __HAL_RCC_AFIO_CLK_ENABLE();
-  __HAL_AFIO_REMAP_TIM3_PARTIAL();
-  HAL_StatusTypeDef res = HAL_OK;
-  res = HAL_TIM_Base_Init(&m_timer3h);
-  res = HAL_TIM_PWM_Init(&m_timer3h);
-  res = HAL_TIM_PWM_ConfigChannel(&m_timer3h, &timer_compare, TIM_CHANNEL_2);
-  res = HAL_TIM_PWM_Start(&m_timer3h, TIM_CHANNEL_2);
-  (void)res;
 }
 
 // gpio-uart1 init
@@ -116,13 +80,9 @@ void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
 //
 void SystemClock_Config(void);
 
-// set timer3 pwm duty
-void set_duty(float duty);
-
 static void BlinkTask(void *p) {
   while (1) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-    HAL_GPIO_TogglePin(GPIOE, GPIO_PIN_5);
     vTaskDelay(500);
   }
 }
@@ -139,7 +99,6 @@ int main(void) {
   //
   // initialize all configured peripherals
   LED_init();
-  // timer3_init(1e2, 1e2, 0.5);
   usart1_init();
 
   //
@@ -227,8 +186,3 @@ void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
-
-void set_duty(float duty) {
-  uint64_t per = __HAL_TIM_GET_AUTORELOAD(&m_timer3h);
-  __HAL_TIM_SET_COMPARE(&m_timer3h, TIM_CHANNEL_2, per * duty);
-}

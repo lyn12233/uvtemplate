@@ -2,6 +2,7 @@
 #include "main.h"
 
 // system
+#include <math.h>
 #include <stddef.h>
 #include <stdio.h>
 
@@ -26,7 +27,10 @@
 // GPIO-led init
 void LED_init() {
   GPIO_InitTypeDef gi = (GPIO_InitTypeDef){
-      .Pin = GPIO_PIN_5, .Mode = GPIO_MODE_OUTPUT_PP, .Speed = GPIO_SPEED_LOW};
+      .Pin = GPIO_PIN_5,
+      .Mode = GPIO_MODE_AF_PP,
+      .Speed = GPIO_SPEED_HIGH,
+  };
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -34,34 +38,46 @@ void LED_init() {
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
 
-// timer-TIM4 init and start
-TIM_HandleTypeDef m_th;
-void timer4_init(int period, int psc) {
-  __HAL_RCC_TIM4_CLK_ENABLE();
-
-  TIM_Base_InitTypeDef tb =
-      (TIM_Base_InitTypeDef){.Period = period,
-                             .Prescaler = psc,
-                             .ClockDivision = TIM_CLOCKDIVISION_DIV1,
-                             .CounterMode = TIM_COUNTERMODE_UP};
-  TIM_HandleTypeDef th = (TIM_HandleTypeDef){.Instance = TIM4, .Init = tb};
-  HAL_TIM_Base_Init(&th);
-
-  // start
-  HAL_TIM_Base_Start(&th);
-
-  m_th = th;
+TIM_HandleTypeDef m_timer3h;
+void timer3_init(int period, int psc, float duty) {
+  TIM_Base_InitTypeDef timer_base = (TIM_Base_InitTypeDef){
+      .Period = period - 1,
+      .Prescaler = psc - 1,
+      .ClockDivision = TIM_CLOCKDIVISION_DIV1,
+      .CounterMode = TIM_COUNTERMODE_UP,
+      .RepetitionCounter = 0,
+      .AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE,
+  };
+  m_timer3h = (TIM_HandleTypeDef){
+      .Instance = TIM3,
+      .Init = timer_base,
+  };
+  TIM_OC_InitTypeDef timer_compare = (TIM_OC_InitTypeDef){
+      .OCMode = TIM_OCMODE_PWM1,
+      .Pulse = (float)period * duty,
+      .OCPolarity = TIM_OCPOLARITY_LOW,
+      .OCFastMode = TIM_OCFAST_DISABLE,
+      .OCIdleState = TIM_OCIDLESTATE_RESET,
+  };
+  __HAL_RCC_TIM3_CLK_ENABLE();
+  __HAL_RCC_AFIO_CLK_ENABLE();
+  __HAL_AFIO_REMAP_TIM3_PARTIAL();
+  HAL_StatusTypeDef res = HAL_OK;
+  res = HAL_TIM_Base_Init(&m_timer3h);
+  res = HAL_TIM_PWM_Init(&m_timer3h);
+  res = HAL_TIM_PWM_ConfigChannel(&m_timer3h, &timer_compare, TIM_CHANNEL_2);
+  res = HAL_TIM_PWM_Start(&m_timer3h, TIM_CHANNEL_2);
 }
 
 // gpio-uart1 init
 USART_HandleTypeDef m_uh;
-void printer_init() {
+void usart1_init() {
   __HAL_RCC_USART1_CLK_ENABLE();
   m_uh = (USART_HandleTypeDef){
       .Instance = USART1,
       .Init =
           (USART_InitTypeDef){
-              .BaudRate = 9600,
+              .BaudRate = 57600,
               .WordLength = USART_WORDLENGTH_8B,
               .StopBits = USART_STOPBITS_1,
               .Parity = USART_PARITY_NONE,
@@ -101,12 +117,15 @@ void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
 //
 void SystemClock_Config(void);
 
+void set_duty(float duty);
+
 static void BlinkTask(void *p) {
-  unsigned char i = 0;
+  int8_t i = 0;
   while (1) {
-    HAL_USART_Transmit(&m_uh, (void *)"tasking\\n", 9, -1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+    HAL_USART_Transmit(&m_uh, (void *)"tasking\r\n", 9, -1);
     i++;
+    set_duty(fabsf((float)i) / 255.);
+    vTaskDelay(5);
   }
 }
 
@@ -114,8 +133,6 @@ static void BlinkTask(void *p) {
 // mainloop
 
 int main(void) {
-  int a = A + A + A;
-  register int b __asm__("r0") = a;
 
   HAL_Init(); // HAL lib init
 
@@ -124,8 +141,8 @@ int main(void) {
   //
   // initialize all configured peripherals
   LED_init();
-  timer4_init(0xffff, 1e2);
-  printer_init();
+  timer3_init(1e2, 1e2, 0.5);
+  usart1_init();
 
   //
   // freertos mainloop
@@ -135,24 +152,15 @@ int main(void) {
   if (res != pdPASS) {
     while (1) {
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-      HAL_USART_Transmit(&m_uh, (void *)"taskcreate failed\\n", 20, -1);
+      HAL_USART_Transmit(&m_uh, (void *)"taskcreate failed\r\n", 20, -1);
     }
   } else {
-    HAL_USART_Transmit(&m_uh, (void *)"taskcreate complete\\n", 22, -1);
+    HAL_USART_Transmit(&m_uh, (void *)"taskcreate complete\r\n", 22, -1);
   }
   vTaskStartScheduler();
   while (1) {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
     HAL_USART_Transmit(&m_uh, (void *)"task all done\\n", 9, -1);
-  }
-
-  while (1) {
-    if (__HAL_TIM_GET_FLAG(&m_th, TIM_FLAG_UPDATE)) {
-      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-      __HAL_TIM_CLEAR_FLAG(&m_th, TIM_FLAG_UPDATE);
-      const void *data = "here\\n";
-      HAL_USART_Transmit(&m_uh, data, 6, -1);
-    }
   }
   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
@@ -219,3 +227,8 @@ void assert_failed(uint8_t *file, uint32_t line) {
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+void set_duty(float duty) {
+  uint64_t per = __HAL_TIM_GET_AUTORELOAD(&m_timer3h);
+  __HAL_TIM_SET_COMPARE(&m_timer3h, TIM_CHANNEL_2, per * duty);
+}

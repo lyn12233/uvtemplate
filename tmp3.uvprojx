@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xE,A=0</Define>
               <Undefine></Undefine>
-              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port</IncludePath>
+              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -382,7 +382,7 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>Application/MDK-ARM</GroupName>
+          <GroupName>startup</GroupName>
           <Files>
             <File>
               <FileName>startup_stm32f103xe.s</FileName>
@@ -392,7 +392,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Application/User/Core</GroupName>
+          <GroupName>main</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
@@ -414,10 +414,25 @@
               <FileType>1</FileType>
               <FilePath>.\Core\Src\freertos_hooks.c</FilePath>
             </File>
+            <File>
+              <FileName>led_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\led_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart1_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usart1_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>blink_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Task\blink_task.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
-          <GroupName>Drivers/STM32F1xx_HAL_Driver</GroupName>
+          <GroupName>hal</GroupName>
           <Files>
             <File>
               <FileName>stm32f1xx_hal.c</FileName>
@@ -712,7 +727,7 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>Drivers/CMSIS</GroupName>
+          <GroupName>cmsis</GroupName>
           <Files>
             <File>
               <FileName>system_stm32f1xx.c</FileName>

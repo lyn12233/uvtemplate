@@ -7,7 +7,6 @@
 #include "portmacro.h"
 #include "task.h"
 
-
 /* Called if a stack overflow is detected. */
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
   /* to halt execution safely */
@@ -34,6 +33,7 @@ void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
 // from port.c
 void xPortSysTickHandler();
 
+// system clock interrupt handler hardwritten in vector table
 void SysTick_Handler() {
   // HAL tick increment
   HAL_IncTick();

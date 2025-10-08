@@ -272,7 +272,6 @@ typedef int16_t datasize_t; ///< sent or received data size
 #include "../Application/Application.h"
 #include "./W6100/w6100.h"
 
-
 // teddy 240122
 #elif (_WIZCHIP_ == W6300)
 
@@ -302,7 +301,6 @@ typedef uint8_t iodata_t;   ///< IO access unit. bus width
 typedef int16_t datasize_t; ///< sent or received data size
 #include "../Application/Application.h"
 #include "./W6300/w6300.h"
-
 
 #else
 #error                                                                         \

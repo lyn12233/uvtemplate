@@ -265,17 +265,22 @@ void wizchip_qspi_write(uint8_t opcode, uint16_t addr, uint8_t *pBuf,
     //    .IF.SPI._write_byte  = wizchip_spi_writebyte
       };
 */
-_WIZCHIP WIZCHIP = {_WIZCHIP_IO_MODE_,
-                    _WIZCHIP_ID_,
-                    {wizchip_cris_enter, wizchip_cris_exit},
-                    {wizchip_cs_select, wizchip_cs_deselect},
-                    {
-                        {// M20150601 : Rename the function
-                         // wizchip_bus_readbyte,
-                         // wizchip_bus_writebyte
-                         wizchip_bus_readdata, wizchip_bus_writedata},
+_WIZCHIP WIZCHIP = {
+    _WIZCHIP_IO_MODE_,
+    _WIZCHIP_ID_,
+    {wizchip_cris_enter, wizchip_cris_exit},
+    {wizchip_cs_select, wizchip_cs_deselect},
+    {
+        {
+            // M20150601 : Rename the function
+            // wizchip_bus_readbyte,
+            // wizchip_bus_writebyte
+            wizchip_bus_readdata,
+            wizchip_bus_writedata,
+        },
 
-                    }};
+    },
+};
 
 static uint8_t _DNS_[4]; // DNS server ip address
 #if (_WIZCHIP_ == W5100 || _WIZCHIP_ == W5100S || _WIZCHIP_ == W5200 ||        \

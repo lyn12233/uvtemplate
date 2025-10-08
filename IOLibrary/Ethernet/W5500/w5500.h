@@ -56,7 +56,6 @@ extern "C" {
 #include "wizchip_conf.h"
 #include <stdint.h>
 
-
 /// @cond DOXY_APPLY_CODE
 #if (_WIZCHIP_ == 5500)
 /// @endcond

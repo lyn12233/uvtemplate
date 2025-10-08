@@ -327,10 +327,9 @@ extern "C" {
   (Sn_ESR_TCPM) ///< It indicates the IP version when SOCKETn is opened as TCP6
                 ///< or TCPD mode.(0 - IPv4 , 1 - IPv6)
 #define TCPSOCK_OP                                                             \
-  (                                                                            \
-      Sn_ESR_TCPOP) ///< It indicates the operation mode when SOCKETn is
-                    ///< connected.(0 - <b>TCP CLIENT</b> , 1 - <b>TCP
-                    ///< SERVER</b>)
+  (Sn_ESR_TCPOP) ///< It indicates the operation mode when SOCKETn is
+                 ///< connected.(0 - <b>TCP CLIENT</b> , 1 - <b>TCP
+                 ///< SERVER</b>)
 #define TCPSOCK_SIP                                                            \
   (Sn_ESR_IP6T) ///< It indicates the source ip address type when SOCKET is
                 ///< connected. (0 - Link Local, 1 - Global Unique)

@@ -5,9 +5,9 @@
 
 > below is a description on stm32f103xe dev
 
-## basic knowledge
+## 1. basic knowledge
 
-### nomenclature
+### 1.1 nomenclature
 
 - AHB: advanced high-performance bus
 - AIRCR: application interrupt/reset control register (c inst)
@@ -28,7 +28,7 @@
 - UIF: update interrupt flag
 
 
-### hardware info
+### 1.2 hardware info
 
 cortex-m3 core component:
     1. cm3 core(cpu, based on armv7 core)
@@ -72,7 +72,7 @@ stm32 naming:
 - 4/6/8/B/C/D/E: 16K/32K/64K/128K/256K/384K/512K flash
 - ..
 
-### start schedules
+### 1.3 start schedules
 
 - board setup
   - entry: startup_xxx.s
@@ -105,7 +105,9 @@ user-defined parts:
   - HAL_TIM_Base_Start: 
     - __HAL_TIM_ENABLE: set ->CR1 segment to enable
 
-### GPIO
+## 2 peripheral basic
+
+### 2.1 GPIO
 
 #### mode
 - in floating
@@ -121,7 +123,7 @@ GPIO_InitTypeDef, GPIO_PIN_x, GPIO_MODE_x, GPIO_SPEED_x, __HAL_RCC_GPIOx_CLK_ENA
 
 > to lit LED, scheme shows that LED0--PB5 means GPIOB pin5
 
-### timers
+### 2.2 timers
 #### common timer modes:
 - regular
 - pwm output
@@ -146,7 +148,9 @@ for general regs:
 CK_INT(internal), TIx(toggle input), ETR(external toggle), ITRx(internal toggle)
 #### timer behavior
 
-### transplanting FreeRTOS
+## 3 3rd party basics
+
+### 3.1 transplanting FreeRTOS
 > this focuses on single-process stm32f103ze freertos transplantation
 
 freertos requires hardware specific files, including(as officially recommended):
@@ -176,7 +180,24 @@ files provided by freertos kernel:
 
 for freertos intro, see [tutorial_notes](./read_freertos.md) and [config_spec](./read_config.md), or better officially [freertos.org](https://freertos.org)
 
-## description of file layout:
+### 3.2 transplanting iolibrary for w5500 hardware
+**w5500** is wired internet controller chip embedded with TCP/IP protocol stacks. it can be connected with SPI bus. **iolibrary** implements simplified TCP socket schemes for w5500 and other chips.
+
+required pins are:
+ - VCC: 3.3V
+ - GND
+ - NRF_CS: (spi) chip select
+ - NRF_CE
+ - NRF_IRQ
+ - MOSI: (spi) master output, slave input
+ - MISO: (spi) master input, slave output
+ - SCLK: (spi) synchronization clock
+
+transplantation requires board-dependent SPI read/write implementations, as well as other configs
+
+for iolibrary intro, see [iolibrary_notes](./read_iolibrary.md)
+
+## 4 description of file layout:
 
 - ./Core: startup entry, main entry, and system ctors
   - Inc

@@ -17,7 +17,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f1xx_it.h"
-#include "main.h"
+#include "stm32f1xx_hal.h"
 
 /******************************************************************************/
 /*           Cortex-M3 Processor Interruption and Exception Handlers          */

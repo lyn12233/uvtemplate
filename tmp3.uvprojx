@@ -414,21 +414,6 @@
               <FileType>1</FileType>
               <FilePath>.\Core\Src\freertos_hooks.c</FilePath>
             </File>
-            <File>
-              <FileName>led_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\led_init.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart1_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usart1_init.c</FilePath>
-            </File>
-            <File>
-              <FileName>blink_task.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Task\blink_task.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -813,6 +798,36 @@
               <FileName>wizchip_conf.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\IOLibrary\Ethernet\wizchip_conf.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>user</GroupName>
+          <Files>
+            <File>
+              <FileName>led_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\led_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>usart1_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\usart1_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>user_main.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\user_main.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>task</GroupName>
+          <Files>
+            <File>
+              <FileName>blink_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Task\blink_task.c</FilePath>
             </File>
           </Files>
         </Group>

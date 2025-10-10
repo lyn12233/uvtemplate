@@ -18,10 +18,23 @@
 #include "stm32f1xx_hal_tim.h"
 #include "stm32f1xx_hal_usart.h"
 
-
 // 3rd party
 #include "FreeRTOS.h"
 #include "task.h"
+
+int get_adc_value(int channel) {
+  ADC_ChannelConfTypeDef sConfig = {0};
+  sConfig.Channel = ADC_CHANNEL_0 + channel;
+  sConfig.Rank = ADC_REGULAR_RANK_1;
+  sConfig.SamplingTime = ADC_SAMPLETIME_55CYCLES_5;
+  HAL_ADC_ConfigChannel(&m_adch, &sConfig);
+
+  HAL_ADC_Start(&m_adch);
+  HAL_ADC_PollForConversion(&m_adch, 10);
+  int value = HAL_ADC_GetValue(&m_adch);
+  // HAL_ADC_Stop(&m_adch);
+  return value;
+}
 
 //
 // mainloop
@@ -36,6 +49,14 @@ int user_main() {
   // initialize all configured peripherals
   LED_init();
   usart1_init();
+
+  int value = 0;
+  float voltage = 0.0;
+  adc_init();
+  while (1) {
+    value = get_adc_value(1);
+    voltage = (value * 3.3) / 4096;
+  }
 
   //
   // create task

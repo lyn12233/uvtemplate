@@ -3,6 +3,7 @@
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_adc.h"
+#include "stm32f1xx_hal_adc_ex.h"
 #include "stm32f1xx_hal_def.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
@@ -27,6 +28,7 @@ void adc_init() {
 
   HAL_ADC_Init(&m_adch);
   HAL_ADC_Start(&m_adch);
+  HAL_ADCEx_Calibration_Start(&m_adch);
 }
 
 void HAL_ADC_MspInit(ADC_HandleTypeDef *hadc) {

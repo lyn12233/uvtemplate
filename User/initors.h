@@ -7,3 +7,5 @@ void LED_init();
 extern USART_HandleTypeDef m_uh;
 void usart1_init();
 void HAL_USART_MspInit(USART_HandleTypeDef *husart);
+ADC_HandleTypeDef m_adch;
+void adc_init();

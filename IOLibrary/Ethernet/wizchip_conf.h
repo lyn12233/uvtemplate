@@ -77,14 +77,8 @@ extern "C" {
 #define W6300 6300
 
 #ifndef _WIZCHIP_
-// NOTE_LIHAN: Some sections of this code are not yet fully defined.
-#define _WIZCHIP_ W6300 // W5100, W5100S, W5200, W5300, W5500, 6300
+#error please Define your WIZnet chip numer
 #endif
-
-//
-// #ifndef _WIZCHIP_
-//   #error  please Define your WIZnet chip numer
-// #endif
 
 #define _WIZCHIP_IO_MODE_NONE_ 0x0000
 #define _WIZCHIP_IO_MODE_BUS_ 0x0100 /**< Bus interface mode */

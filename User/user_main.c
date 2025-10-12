@@ -3,6 +3,7 @@
 
 #include "blink_task.h"
 #include "initors.h"
+#include "wiz_test.h"
 
 // system
 #include <stdio.h>
@@ -22,6 +23,9 @@
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "log.h"
+
+// testing
 int get_adc_value(int channel) {
   ADC_ChannelConfTypeDef sConfig = {0};
   sConfig.Channel = ADC_CHANNEL_0 + channel;
@@ -49,6 +53,14 @@ int user_main() {
   // initialize all configured peripherals
   LED_init();
   usart1_init();
+
+  puts("[test printf]\r\n");
+  printf("a string: %s\r\na char: %c\r\n", "HelloWorld", 'A');
+  printf("a int: %d\r\na double: %lf\r\n", (int)12345, (double)6789);
+  while (1) {
+    wizspi_test_mainloop();
+    HAL_Delay(1000);
+  }
 
   int value = 0;
   float voltage = 0.0;

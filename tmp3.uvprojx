@@ -805,19 +805,39 @@
           <GroupName>user</GroupName>
           <Files>
             <File>
-              <FileName>led_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\led_init.c</FilePath>
-            </File>
-            <File>
-              <FileName>usart1_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\usart1_init.c</FilePath>
-            </File>
-            <File>
               <FileName>user_main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\user_main.c</FilePath>
+            </File>
+            <File>
+              <FileName>wizspi_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\wizspi_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\log.c</FilePath>
+            </File>
+            <File>
+              <FileName>wiz_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\wiz_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>init_adc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\init_adc.c</FilePath>
+            </File>
+            <File>
+              <FileName>init_led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\init_led.c</FilePath>
+            </File>
+            <File>
+              <FileName>init_usart1.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\init_usart1.c</FilePath>
             </File>
           </Files>
         </Group>

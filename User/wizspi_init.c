@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "log.h"
+
 SPI_HandleTypeDef m_wizspi_spih;
 void wizspi_spi_init() {
   // enable clock for GPIOG,GPIOB,SPI2,AF
@@ -55,14 +57,16 @@ void wizspi_spi_init() {
       .CRCPolynomial = 7, // MBNZ
   };
   m_wizspi_spih = (SPI_HandleTypeDef){.Instance = SPI2, .Init = spi_init};
-  HAL_SPI_Init(&m_wizspi_spih);
+  CHECK_FAIL(HAL_SPI_Init(&m_wizspi_spih) == HAL_OK);
 }
 void wizspi_writebyte(uint8_t tx_data) {
-  HAL_SPI_Transmit(&m_wizspi_spih, &tx_data, 1, -1);
+  // puts("wiz: writebyte");
+  CHECK_FAIL(HAL_SPI_Transmit(&m_wizspi_spih, &tx_data, 1, 10) == HAL_OK);
 }
 uint8_t wizspi_readbyte() {
+  // puts("wiz: readbyte");
   uint8_t val;
-  HAL_SPI_Receive(&m_wizspi_spih, &val, 1, -1);
+  CHECK_FAIL(HAL_SPI_Receive(&m_wizspi_spih, &val, 1, 10) == HAL_OK);
   return val;
 }
 void wizspi_enter() { __disable_irq(); }
@@ -98,9 +102,9 @@ void wizspi_network_init() {
       .dhcp = NETINFO_STATIC,
   };
 
-  ctlnetwork(CN_SET_NETINFO, &net_info);
-  ctlnetwork(CN_GET_NETINFO, &net_info);
-  ctlwizchip(CW_GET_ID, &chip_id);
+  CHECK_FAIL(ctlnetwork(CN_SET_NETINFO, &net_info) == 0);
+  CHECK_FAIL(ctlnetwork(CN_GET_NETINFO, &net_info) == 0);
+  CHECK_FAIL(ctlwizchip(CW_GET_ID, &chip_id) == 0);
 
   net_timeout = (wiz_NetTimeout){.retry_cnt = 50, .time_100us = 1000};
   wizchip_settimeout(&net_timeout);

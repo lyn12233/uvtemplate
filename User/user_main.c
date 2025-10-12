@@ -54,10 +54,11 @@ int user_main() {
   LED_init();
   usart1_init();
 
-  puts("[test printf]\r\n");
+  puts("[test printf]");
   printf("a string: %s\r\na char: %c\r\n", "HelloWorld", 'A');
   printf("a int: %d\r\na double: %lf\r\n", (int)12345, (double)6789);
   while (1) {
+    CHECK_FAIL(1 + 1 == 2);
     wizspi_test_mainloop();
     HAL_Delay(1000);
   }
@@ -66,8 +67,10 @@ int user_main() {
   float voltage = 0.0;
   adc_init();
   while (1) {
+    HAL_Delay(1000);
     value = get_adc_value(1);
     voltage = (value * 3.3) / 4096;
+    printf("voltage: %f\r\n", voltage);
   }
 
   //

@@ -1,5 +1,6 @@
 #include "wiz_test.h"
 
+#include "loopback.h"
 #include "wizspi_init.h"
 
 #include "stm32f1xx_hal.h"
@@ -15,10 +16,24 @@
 
 #include "log.h"
 
+void wizspi_test_print() {
+  wiz_NetInfo ni = {0};
+  wizchip_getnetinfo(&ni);
+  printf("ip    : %u.%u.%u.%u\r\n", ni.ip[0], ni.ip[1], ni.ip[2], ni.ip[3]);
+}
+
+uint8_t ethernet_buff[1024 * 2];
 void wizspi_test_mainloop() {
   int res = wizspi_w5500_init();
-  if (res != 0)
+  if (res != 0) {
     puts("wizspi init failed");
-  else
-    puts("wizspi init success");
+    return;
+  }
+  puts("wizspi init success");
+  wizspi_test_print();
+  while (1) {
+    HAL_Delay(1000);
+    puts("loopback");
+    loopback_tcps(0, ethernet_buff, 5000);
+  }
 }

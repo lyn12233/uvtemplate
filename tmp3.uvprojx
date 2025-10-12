@@ -338,7 +338,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_HAL_DRIVER,STM32F103xE,A=0,_WIZCHIP_=5500</Define>
+              <Define>USE_HAL_DRIVER,STM32F103xE,A=0,_WIZCHIP_=5500,_LOOPBACK_DEBUG_</Define>
               <Undefine></Undefine>
               <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task;.\IOLibrary\Ethernet;.\IOLibrary\Application\loopback;.\IOLibrary\Application\multicast;.\IOLibrary\Ethernet\W5500</IncludePath>
             </VariousControls>

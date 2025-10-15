@@ -82,9 +82,9 @@ void wizspi_register() {
 }
 void wizspi_reset() {
   WIZSPI_RST_0();
-  HAL_Delay(50);
+  HAL_Delay(100);
   WIZSPI_RST_1();
-  HAL_Delay(10);
+  HAL_Delay(100);
 }
 //?
 // set network attrs
@@ -95,10 +95,10 @@ void wizspi_network_init() {
 
   net_info = (wiz_NetInfo){
       .mac = {0, 8, 0xdc, 0x11, 0x11, 0x11},
-      .ip = {192, 168, 86, 150},
+      .ip = {192, 168, 31, 2},
       .sn = {255, 255, 255, 0},
-      .gw = {192, 168, 86, 1},
-      .dns = {8, 8, 8, 6},
+      .gw = {192, 168, 31, 1},
+      .dns = {192, 168, 31, 1},
       .dhcp = NETINFO_STATIC,
   };
 
@@ -111,17 +111,28 @@ void wizspi_network_init() {
 }
 
 int wizspi_w5500chip_init() {
-  return wizchip_init(0, 0); // specify tx/rx buff size
+  return wizchip_init(0, 0); // specify tx/rx buff size as default
 }
 
 int wizspi_w5500phy_init() {
   wiz_PhyConf phy_conf = (wiz_PhyConf){
       .by = PHY_CONFBY_SW,
       .duplex = PHY_DUPLEX_FULL,
-      .mode = PHY_MODE_AUTONEGO,
-      .speed = PHY_SPEED_10,
+      .mode = PHY_MODE_MANUAL,
+      .speed = PHY_SPEED_100,
   };
-  return ctlwizchip(CW_SET_PHYCONF, &phy_conf);
+  int res = ctlwizchip(CW_SET_PHYCONF, &phy_conf);
+  if (res) {
+    puts("ERROR: PHY not init correctly\r\n");
+    return res;
+  }
+  HAL_Delay(500);
+  if (wizphy_getphylink() == PHY_LINK_OFF) {
+    puts("WARN Phy link off after config");
+    phy_conf.mode = PHY_MODE_AUTONEGO;
+    res = ctlwizchip(CW_SET_PHYCONF, &phy_conf);
+  }
+  return res;
 }
 int wizspi_w5500_init() {
   wizspi_spi_init();

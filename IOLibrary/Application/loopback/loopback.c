@@ -41,8 +41,8 @@ int32_t loopback_tcps(uint8_t sn, uint8_t *buf, uint16_t port) {
 #endif
       setSn_IR(sn, Sn_IR_CON);
     }
-    if ((size = getSn_RX_RSR(sn)) >
-        0) { // Don't need to check SOCKERR_BUSY because it doesn't not occur.
+    if ((size = getSn_RX_RSR(sn)) > 0) {
+      // Don't need to check SOCKERR_BUSY because it doesn't not occur.
       if (size > DATA_BUF_SIZE) {
         size = DATA_BUF_SIZE;
       }

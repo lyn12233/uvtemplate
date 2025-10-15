@@ -1,6 +1,7 @@
 #include "wiz_test.h"
 
 #include "loopback.h"
+#include "socket.h"
 #include "wizspi_init.h"
 
 #include "stm32f1xx_hal.h"
@@ -24,16 +25,25 @@ void wizspi_test_print() {
 
 uint8_t ethernet_buff[1024 * 2];
 void wizspi_test_mainloop() {
-  int res = wizspi_w5500_init();
+  int res;
+  puts("start wiztest mainloop");
+
+init:
+  res = wizspi_w5500_init();
   if (res != 0) {
-    puts("wizspi init failed");
-    return;
+    puts("wizspi init failed, reinit");
+    HAL_Delay(1000);
+    goto init;
   }
   puts("wizspi init success");
   wizspi_test_print();
   while (1) {
     HAL_Delay(1000);
     puts("loopback");
-    loopback_tcps(0, ethernet_buff, 5000);
+    res = loopback_tcps(0, ethernet_buff, 5000);
+    if (res == SOCKERR_SOCKINIT) {
+      puts("loopback failed with SCOKERR_SOCKINIT, reinit");
+      goto init;
+    }
   }
 }

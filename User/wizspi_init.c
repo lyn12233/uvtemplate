@@ -23,7 +23,7 @@ void wizspi_spi_init() {
 
   // register pin mode for cs, sclk, miso, mosi
 
-  // cs
+  // cs. ce
   GPIO_InitTypeDef gi;
   gi = (GPIO_InitTypeDef){
       .Pin = GPIO_PIN_7 | GPIO_PIN_8,
@@ -40,7 +40,7 @@ void wizspi_spi_init() {
       .Mode = GPIO_MODE_AF_PP,
       .Speed = GPIO_SPEED_HIGH,
   };
-  HAL_GPIO_Init(GPIOA, &gi);
+  HAL_GPIO_Init(GPIOB, &gi);
 
   //
   // spi config

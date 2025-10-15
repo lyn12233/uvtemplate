@@ -10,7 +10,7 @@
 #define WIZSPI_CS_0() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_7, GPIO_PIN_RESET)
 
 // spi reset? nrf_ce - pg8; low to reset
-#define WIZSPI_RST_1() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_RESET)
+#define WIZSPI_RST_1() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_SET)
 #define WIZSPI_RST_0() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_8, GPIO_PIN_RESET)
 
 // spi SCLK spi2_sck - pb13

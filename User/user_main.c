@@ -24,6 +24,7 @@
 #include "task.h"
 
 #include "log.h"
+#include "wizspi_init.h"
 
 // testing
 int get_adc_value(int channel) {
@@ -57,10 +58,11 @@ int user_main() {
   puts("[test printf]");
   printf("a string: %s\r\na char: %c\r\n", "HelloWorld", 'A');
   printf("a int: %d\r\na double: %lf\r\n", (int)12345, (double)6789);
+
   while (1) {
-    CHECK_FAIL(1 + 1 == 2);
+    // CHECK_FAIL(1 + 1 == 2);
     wizspi_test_mainloop();
-    HAL_Delay(1000);
+    HAL_Delay(500);
   }
 
   int value = 0;

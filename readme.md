@@ -104,6 +104,11 @@ user-defined parts:
     - set states to ready
   - HAL_TIM_Base_Start: 
     - __HAL_TIM_ENABLE: set ->CR1 segment to enable
+- SPI setup
+  -   __HAL_RCC_GPIOx_CLK_ENABLE, __HAL_RCC_SPIx_CLK_ENABLE, __HAL_RCC_AFIO_CLK_ENABLE;
+  - init corresponding GPIO pins: spi pins(e.g. pb13-sclk, pb14-miso, pb15-mosi for spi2) in af_pp mode(controlled by spi, push-pull), cs(chipselect), rst pins choose arbitrarily, in output_xx mode(to handle manually);
+  - HAL_SPI_Init: specify polarity, sample phase, master/slave, chipselect ctrl, speed, datasize+endian+crc etc.
+
 
 ## 2 peripheral basic
 

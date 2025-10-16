@@ -82,9 +82,8 @@ void wizspi_register() {
 }
 void wizspi_reset() {
   WIZSPI_RST_0();
-  HAL_Delay(100);
+  HAL_Delay(500);
   WIZSPI_RST_1();
-  HAL_Delay(100);
 }
 //?
 // set network attrs
@@ -93,13 +92,15 @@ void wizspi_network_init() {
   wiz_NetInfo net_info;
   wiz_NetTimeout net_timeout;
 
+  // possible valid netinfo
   net_info = (wiz_NetInfo){
-      .mac = {0, 8, 0xdc, 0x11, 0x11, 0x11},
-      .ip = {192, 168, 31, 2},
-      .sn = {255, 255, 255, 0},
-      .gw = {192, 168, 31, 1},
-      .dns = {192, 168, 31, 1},
-      .dhcp = NETINFO_STATIC,
+      .mac = {0, 8, 0xdc, 0x11, 0x11, 0x11}, // must be unique
+      .ip = {192, 168, 31, 218},             // subnet should be compliant
+      .sn = {255, 255, 255, 0},              // subnet mask for 192.168.x
+      .gw = {192, 168, 31, 1},               // gateway, by default
+      .dns = {192, 168, 31, 1},              // dns server or 8.8.8.8
+      .dhcp = NETINFO_DHCP, // or static; when static, ip should be out of dhcp
+                            // effective range
   };
 
   CHECK_FAIL(ctlnetwork(CN_SET_NETINFO, &net_info) == 0);
@@ -111,37 +112,68 @@ void wizspi_network_init() {
 }
 
 int wizspi_w5500chip_init() {
-  return wizchip_init(0, 0); // specify tx/rx buff size as default
+  int res = wizchip_init(0, 0); // specify tx/rx buff size as default
+  wizphy_reset();
+  return res;
 }
 
 int wizspi_w5500phy_init() {
+  // least quality config trading for validity
   wiz_PhyConf phy_conf = (wiz_PhyConf){
-      .by = PHY_CONFBY_SW,
-      .duplex = PHY_DUPLEX_FULL,
-      .mode = PHY_MODE_MANUAL,
-      .speed = PHY_SPEED_100,
+      .by = PHY_CONFBY_SW,       // PHYCFGR[6]
+      .duplex = PHY_DUPLEX_HALF, // or full
+      .mode = PHY_MODE_MANUAL,   // or negotiate
+      .speed = PHY_SPEED_10,     // or 100M
   };
-  int res = ctlwizchip(CW_SET_PHYCONF, &phy_conf);
-  if (res) {
-    puts("ERROR: PHY not init correctly\r\n");
-    return res;
-  }
-  HAL_Delay(500);
-  if (wizphy_getphylink() == PHY_LINK_OFF) {
-    puts("WARN Phy link off after config");
-    phy_conf.mode = PHY_MODE_AUTONEGO;
-    res = ctlwizchip(CW_SET_PHYCONF, &phy_conf);
-  }
-  return res;
+  wizphy_setphyconf(&phy_conf); // chip reset is called within
+
+  return 0;
 }
 int wizspi_w5500_init() {
   wizspi_spi_init();
   wizspi_reset();
   wizspi_register();
-  if (wizspi_w5500chip_init())
+  if (wizspi_w5500chip_init()) {
+    puts("chip init failed");
     return -1;
+  }
   if (wizspi_w5500phy_init())
     return -1;
   wizspi_network_init();
   return 0;
+}
+
+void wizspi_phy_print() {
+  uint8_t phycfgr = getPHYCFGR();
+  // wiz_PhyConf conf;
+  printf("PHYCFGR: 0x%02X\r\n", phycfgr);
+
+  // Check individual bits
+  printf("Link: %s\r\n", (phycfgr & 0x01) ? "UP" : "DOWN");
+  printf("Speed: %s\r\n", (phycfgr & 0x02) ? "100M" : "10M");
+  printf("Duplex: %s\r\n", (phycfgr & 0x04) ? "Full" : "Half");
+  printf("OPMDC: [5,4,3]:%d,%d,%d\r\n", (phycfgr & 0x20) != 0,
+         (phycfgr & 0x10) != 0, (phycfgr & 0x08) != 0);
+  printf("OPMD: %s\r\n", (phycfgr & 0x40) ? "by sw" : "by hw");
+  printf("Reset: %s\r\n", (phycfgr & 0x80) ? "after reset" : "reset");
+}
+
+void wizspi_test_print() {
+  wiz_NetInfo ni = {0};
+  wizchip_getnetinfo(&ni);
+  printf("ip     \t: %u.%u.%u.%u\r\n", //
+         ni.ip[0], ni.ip[1], ni.ip[2], ni.ip[3]);
+  printf("mac    \t: %x:%x:%x:%x:%x:%x\r\n", //
+         ni.mac[0], ni.mac[1], ni.mac[2], ni.mac[3], ni.mac[4], ni.mac[5]);
+  printf("gateway\t: %u.%u.%u.%u\r\n", //
+         ni.gw[0], ni.gw[1], ni.gw[2], ni.gw[3]);
+  printf("subnet \t: %u.%u.%u.%u\r\n", //
+         ni.sn[0], ni.sn[1], ni.sn[2], ni.sn[3]);
+  printf("dns    \t: %u.%u.%u.%u\r\n", //
+         ni.dns[0], ni.dns[1], ni.dns[2], ni.dns[3]);
+  printf("dhcp   \t: %s\r\n", ni.dhcp == 1 ? "Static" : "DHCP");
+
+  printf("phy link\t: %s\r\n",
+         wizphy_getphylink() == PHY_LINK_ON ? "PHY_LINK_ON" : "PHY_LINK_OFF");
+  wizspi_phy_print();
 }

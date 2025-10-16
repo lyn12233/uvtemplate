@@ -1,5 +1,9 @@
 # Project License Information
 
+this repository contains both original code and code derived from third party sources
+- original code is licensed under mit license, see [license](./LICENSE)
+- code derived from third party sources complies to corresponding licenses as described below
+
 ## Third-Party Components
 
 ### CMSIS (Cortex Microcontroller Software Interface Standard)

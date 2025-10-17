@@ -40,6 +40,17 @@ int get_adc_value(int channel) {
   return value;
 }
 
+void SampleTask(void *p) {
+  int value = 0;
+  float voltage = 0.0;
+  while (1) {
+    value = get_adc_value(1);
+    voltage = (value * 3.3) / 4096;
+    printf("voltage: %f\r\n", voltage);
+    vTaskDelay(1000);
+  }
+}
+
 //
 // mainloop
 
@@ -51,41 +62,20 @@ int user_main() {
 
   //
   // initialize all configured peripherals
-  LED_init();
   usart1_init();
-
-  puts("[test printf]\r\n");
-  printf("a string: %s\r\na char: %c\r\n", "HelloWorld", 'A');
-  printf("a int: %d\r\na double: %lf\r\n", (int)12345, (double)6789);
-  while (1) {
-    wizspi_test_mainloop();
-    HAL_Delay(1000);
-  }
-
-  int value = 0;
-  float voltage = 0.0;
   adc_init();
-  while (1) {
-    value = get_adc_value(1);
-    voltage = (value * 3.3) / 4096;
-  }
 
   //
   // create task
-  BaseType_t res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE,
-                               NULL, configMAX_PRIORITIES - 2, NULL);
-  if (res != pdPASS) {
-    while (1) {
-      HAL_USART_Transmit(&m_uh, (void *)"taskcreate failed\r\n", 20, -1);
-      HAL_Delay(1000);
-    }
-  } else {
-    HAL_USART_Transmit(&m_uh, (void *)"taskcreate complete\r\n", 22, -1);
-  }
+  BaseType_t res = xTaskCreate(                                      //
+      SampleTask, "SampleTask",                                      //
+      configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 2, NULL //
+  );
 
   //
   // freertos mainloop
   vTaskStartScheduler();
+
   while (1) {
     HAL_USART_Transmit(&m_uh, (void *)"task all done\\n", 9, -1);
     HAL_Delay(1000);

@@ -340,7 +340,7 @@
               <MiscControls></MiscControls>
               <Define>USE_HAL_DRIVER,STM32F103xE,A=0,_WIZCHIP_=5500,_LOOPBACK_DEBUG_</Define>
               <Undefine></Undefine>
-              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task;.\IOLibrary\Ethernet;.\IOLibrary\Application\loopback;.\IOLibrary\Application\multicast;.\IOLibrary\Ethernet\W5500</IncludePath>
+              <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task;.\StdPort;.\IOLibrary\Ethernet;.\IOLibrary\Application\loopback;.\IOLibrary\Application\multicast;.\IOLibrary\Ethernet\W5500</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -810,34 +810,29 @@
               <FilePath>.\User\user_main.c</FilePath>
             </File>
             <File>
-              <FileName>wizspi_init.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\wizspi_init.c</FilePath>
-            </File>
-            <File>
-              <FileName>log.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\log.c</FilePath>
-            </File>
-            <File>
-              <FileName>wiz_test.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\wiz_test.c</FilePath>
-            </File>
-            <File>
               <FileName>init_adc.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\User\init_adc.c</FilePath>
+              <FilePath>.\User\user_init\init_adc.c</FilePath>
             </File>
             <File>
               <FileName>init_led.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\User\init_led.c</FilePath>
+              <FilePath>.\User\user_init\init_led.c</FilePath>
             </File>
             <File>
               <FileName>init_usart1.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\User\init_usart1.c</FilePath>
+              <FilePath>.\User\user_init\init_usart1.c</FilePath>
+            </File>
+            <File>
+              <FileName>wiz_test.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\wiz\wiz_test.c</FilePath>
+            </File>
+            <File>
+              <FileName>wizspi_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\wiz\wizspi_init.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -848,6 +843,16 @@
               <FileName>blink_task.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Task\blink_task.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>std_port</GroupName>
+          <Files>
+            <File>
+              <FileName>log.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\StdPort\log.c</FilePath>
             </File>
           </Files>
         </Group>

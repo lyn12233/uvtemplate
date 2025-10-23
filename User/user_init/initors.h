@@ -9,3 +9,7 @@ void usart1_init();
 void HAL_USART_MspInit(USART_HandleTypeDef *husart);
 extern ADC_HandleTypeDef m_adch;
 void adc_init();
+
+#define LED_TOGGLE() HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5)
+
+extern int systick_count; // implemented at _hooks.c

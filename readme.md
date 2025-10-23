@@ -5,6 +5,8 @@
 
 > below is a description on stm32f103xe mcu and prechin-z400 board devenv
 
+> jump to [3rd section](#3-3rd-party-basics)
+
 ## 1. basic knowledge
 
 ### 1.1 nomenclature
@@ -171,6 +173,8 @@ freertos requires hardware specific files, including(as officially recommended):
  - heap_x.c choose heap scheme
 
 > note: in one previous code SysTick_Handler to defined as a macro to vPortSysTickHandler(or whatever). SysTick_Handler is the actual handler in interrupt vector table (in startup_xxx.s). it is necessary to make sure SysTick_Handler is the only and determinstic system tick clock handler, which should notify tick to both HAL (inc_tick) and FreeRTOS(...tick_handler) 
+
+> note: any call to FreeRTOS APIs may make systick_handler not available under non task context; 2 solutions: 1. use a peripheral timer for HAL_Delay solely; 2. always obey FreeRTOS task framework, only initializations outside task;
 
 files provided by freertos kernel:
  - croutine.c: coroutine implementation, not suggested in 32-bit mcu

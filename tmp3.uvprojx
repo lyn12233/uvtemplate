@@ -854,6 +854,21 @@
               <FileType>1</FileType>
               <FilePath>.\StdPort\log.c</FilePath>
             </File>
+            <File>
+              <FileName>port_errno.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\StdPort\port_errno.c</FilePath>
+            </File>
+            <File>
+              <FileName>port_fd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\StdPort\port_fd.c</FilePath>
+            </File>
+            <File>
+              <FileName>port_socket.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\StdPort\port_socket.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

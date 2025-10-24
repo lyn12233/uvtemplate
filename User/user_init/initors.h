@@ -1,14 +1,38 @@
+///@file initors.h
 #pragma once
 
+#include "FreeRTOS.h"
+#include "queue.h"
+
 #include "stm32f103xe.h"
+#include "stm32f1xx_hal_sd.h"
 #include "stm32f1xx_hal_usart.h"
+#include <stdint.h>
+
+///@defgroup user_init
+///@brief user-defined peripheral port initialization steps
 
 void LED_init();
+
 extern USART_HandleTypeDef m_uh;
 void usart1_init();
+extern USART_HandleTypeDef m_u3h;
+extern QueueHandle_t m_esp8266_qin;
+extern uint8_t m_esp8266_recvbyte;
+void usart3_init();
+
 void HAL_USART_MspInit(USART_HandleTypeDef *husart);
+extern void USART3_IRQHandler(); // override NVIC table
+extern void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart);
+
 extern ADC_HandleTypeDef m_adch;
 void adc_init();
+
+extern SD_HandleTypeDef m_sdh;
+void sdio_init();
+void HAL_SD_MspInit(SD_HandleTypeDef *hsd);
+
+// misc
 
 #define LED_TOGGLE() HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5)
 

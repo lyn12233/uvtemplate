@@ -35,6 +35,8 @@ void usart1_init() {
 
 ///@brief usart3 handler
 USART_HandleTypeDef m_u3h;
+///@brief esp8266-usart recv queue(ringbuff) instance
+QueueHandle_t m_esp8266_qin;
 ///@brief usart3-esp8266-s wifi port init
 void usart3_init() {
   __HAL_RCC_USART3_CLK_ENABLE();

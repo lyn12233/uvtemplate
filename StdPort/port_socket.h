@@ -1,16 +1,17 @@
 ///@file port_socket.h
 ///@brief socket and internet defs and decls
 ///@details this socket interface should be built on FreeRTOS components and a
-///internet middleware(e.g. uart parser for esp8266-1s peripheral). see @ref
-///https://www.man7.org/linux/man-pages/man2/socket.2.html
+/// internet middleware(e.g. uart parser for esp8266-1s peripheral). see @ref
+/// https://www.man7.org/linux/man-pages/man2/socket.2.html
 #pragma once
 
 #include <stdint.h>
 
 #include "port_unistd.h"
 
-///@defgroup port_sock_addr_def
-///@brief internet address defined numbers
+///@defgroup port_sock_addr
+///@brief internet address defined numbers, structs and options, comming from
+/// arpa/inet.h and netinet/in.h
 ///@{
 
 ///@brief ipv4 address family
@@ -23,6 +24,13 @@ struct sockaddr {
 };
 ///@brief length type of address len
 typedef uint8_t socklen_t;
+
+// byte order change (host-network)
+
+extern uint32_t htonl(uint32_t hostlong);
+extern uint16_t htons(uint16_t hostshort);
+extern uint32_t ntohl(uint32_t netlong);
+extern uint16_t ntohs(uint16_t netshort);
 
 ///@}
 
@@ -51,7 +59,7 @@ typedef uint8_t socklen_t;
 ///@{
 
 ///@brief create socket endpoint
-///@param domain see @ref port_sock_addr_def
+///@param domain see @ref port_sock_addr
 ///@param type see @ref port_sock_def
 ///@param protocol see @ref port_sock_ip
 ///@return listening sock file descriptor (sockfd); on error, returns -1 and

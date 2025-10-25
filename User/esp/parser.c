@@ -1,0 +1,277 @@
+///@file parser.c
+#include "parser.h"
+
+#include "types/vo.h"
+
+#include <stdint.h>
+#include <string.h>
+
+#include "log.h"
+
+// behavior: parsing AT command streams, recognizing format:
+//     - <MSG>\r\n where MSG is a subset of messages that may appear
+//     - <id>,CONNECTED\r\n
+//     - <id>,CLOSED\r\n
+//     - +IPD,<id>,<len>:.{<len>}\r\n
+//     - error sequences may be either with invalid chars or with invalid vals
+// where error sequences either end with space or newline/linefeed
+// where operation codes, both MSG and CONNECTED/CLOSED, size restricted by
+// OP_MAXLEN(excluding); where id restricted by ID_MAX, len restricted by
+// BUFF_MAXLEN
+
+#define OP_MAXLEN 32     // included
+#define BUFF_MAXLEN 2048 // included
+#define ID_MAX 5         // excluded
+
+#define STATE_CLEAR 0
+#define STATE_MSG_OP 1
+#define STATE_CONN_ID 2
+#define STATE_CONN_OP 3
+#define STATE_IPD_ID 4
+#define STATE_IPD_LEN 5
+#define STATE_IPD_DAT 6
+#define STATE_ERROR_CHAR 7
+
+static char msg_op[OP_MAXLEN];
+static vstr_t msg_buff_store = {0};
+static vstr_t *const msg_buff = &msg_buff_store;
+static uint16_t op_len;
+static uint16_t conn_id;
+static uint16_t buff_len;
+static uint16_t buff_offs;
+static uint8_t state;
+static atc_msg_t msg;
+
+static inline uint8_t isalpha(uint8_t c) { //
+  return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+}
+static inline uint8_t isdigit(uint8_t c) { //
+  return c >= '0' && c <= '9';
+}
+static inline uint8_t isnewline(uint8_t c) { //
+  return c == '\r' || c == '\n';
+}
+static inline uint8_t isspace(uint8_t c) { //
+  return c == ' ' || c == '\t';
+}
+
+void atc_parser_clear() {
+  //
+  op_len = 0;
+  conn_id = 0;
+  buff_len = 0;
+  buff_offs = 0;
+  state = STATE_CLEAR;
+  msg_op[0] = 0;
+}
+uint8_t atc_parse_char(uint8_t c) {
+  switch (state) {
+
+    // clear
+  case STATE_CLEAR: {
+    if (isnewline(c) || isspace(c)) {
+    } else if (isdigit(c)) {
+      // x,CONNECTED/CLOSED
+      // clear vars
+      conn_id = c - '0', buff_len = 0, buff_offs = 0, op_len = 0;
+      state = STATE_CONN_ID;
+    } else if (isalpha(c) || c == '+') {
+      msg_op[0] = c, op_len = 1;
+      state = STATE_MSG_OP;
+    } else {
+      state = STATE_ERROR_CHAR;
+    }
+  } break;
+
+  // expecting op
+  // before entering this mode ensures op_len is set
+  case STATE_MSG_OP: {
+    if (c == ',') {
+      if (op_len == 4 && strncmp(msg_op, "+IPD", op_len) == 0) {
+        // clear vars
+        op_len = 0, buff_len = 0, buff_offs = 0, conn_id = 0;
+        vstr_clear(msg_buff);
+        state = STATE_IPD_ID;
+      } else {
+        msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
+        msg.type = atc_parse_error, msg.msg = msg_op;
+        atc_dispatch(&msg);
+        state = STATE_ERROR_CHAR;
+      }
+    } else if (isalpha(c) || isspace(c)) {
+      op_len++;
+      if (op_len > OP_MAXLEN) {
+        msg_op[OP_MAXLEN - 1] = 0;
+        msg.type = atc_parse_error, msg.msg = msg_op;
+        atc_dispatch(&msg);
+        state = STATE_ERROR_CHAR;
+      } else {
+        msg_op[op_len - 1] = c;
+      }
+    } else if (isnewline(c)) {
+      if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
+        msg.type = atc_ok;
+        atc_dispatch(&msg);
+      } else if (op_len == 5 && strncmp(msg_op, "ERROR", op_len) == 0) {
+        msg.type = atc_error;
+        atc_dispatch(&msg);
+      } else if (op_len == 7 && strncmp(msg_op, "SEND OK", op_len) == 0) {
+        msg.type = atc_send_ok;
+        atc_dispatch(&msg);
+      } else if (op_len == 9 && strncmp(msg_op, "SEND FAIL", op_len) == 0) {
+        msg.type = atc_send_fail;
+        atc_dispatch(&msg);
+      } else if (op_len == 5 && strncmp(msg_op, "ready", op_len) == 0) {
+        msg.type = atc_ready;
+        atc_dispatch(&msg);
+      } else if (op_len >= 6 && strncmp(msg_op, "busy p", 6) == 0) {
+        msg.type = atc_busy;
+        atc_dispatch(&msg);
+      } else if ( //
+          op_len == 14 && strncmp(msg_op, "WIFI CONNECTED", op_len) == 0) {
+        msg.type = atc_wifi_connected;
+        atc_dispatch(&msg);
+      } else if ( //
+          op_len == 15 && strncmp(msg_op, "WIFI DISCONNECT", op_len) == 0) {
+        msg.type = atc_wifi_disconnect;
+        atc_dispatch(&msg);
+      } else if (op_len == 11 && strncmp(msg_op, "WIFI_GOT_IP", op_len) == 0) {
+        msg.type = atc_wifi_got_ip;
+        atc_dispatch(&msg);
+      } else {
+        msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
+        msg.type = atc_parse_error, msg.msg = msg_op;
+        atc_dispatch(&msg);
+      }
+      state = STATE_CLEAR;
+    } else {
+      msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
+      msg.type = atc_parse_error, msg.msg = msg_op;
+      atc_dispatch(&msg);
+      state = STATE_ERROR_CHAR;
+    }
+  } break;
+
+  // "x,CONNECTION" id part OR "+IPD," id part OR "+IPD," len part
+  // entering these states ensures conn_id, data_len and op_len set proper
+  case STATE_IPD_LEN:
+  case STATE_IPD_ID:
+  case STATE_CONN_ID: {
+    if (isdigit(c)) {
+      // c is part of number
+
+      // sufficient (65535 > 2048)
+      if (state == STATE_IPD_LEN)
+        buff_len = buff_len * 10 + c - '0';
+      else
+        conn_id = conn_id * 10 + c - '0';
+
+      // check number threshold
+      if (state == STATE_IPD_LEN && buff_len <= BUFF_MAXLEN ||
+          state != STATE_IPD_LEN && conn_id < ID_MAX) {
+        // nop
+      } else {
+        // length/id overflow
+        msg.type = atc_inval, msg.id = conn_id, msg.len = buff_len;
+        atc_dispatch(&msg);
+        state = STATE_ERROR_CHAR;
+      }
+    } else if (state == STATE_IPD_LEN && c == ':' ||
+               state != STATE_IPD_LEN && c == ',') {
+      // end of the number
+      if (state == STATE_IPD_LEN && buff_len == 0) {
+        // zero len silent
+        state = STATE_CLEAR;
+      } else {
+        state = state == STATE_IPD_LEN  ? STATE_IPD_DAT
+                : state == STATE_IPD_ID ? STATE_IPD_LEN
+                                        : STATE_CONN_OP;
+      }
+    } else {
+      // invalid val
+      msg.type = atc_inval, msg.id = conn_id, msg.len = 0;
+      atc_dispatch(&msg);
+      state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
+    }
+  } break;
+
+  // x,CONNECT op part
+  case STATE_CONN_OP: {
+    if (isalpha(c)) {
+      // buffer sufficient (31 > 9)
+      msg_op[op_len] = c;
+      op_len++;
+      if (op_len == 9 && strncmp(msg_op, "CONNECTED", op_len) == 0) {
+        msg.type = atc_conn_accepted, msg.id = conn_id;
+        atc_dispatch(&msg);
+        state = STATE_CLEAR;
+      } else if (op_len == 6 && strncmp(msg_op, "CLOSED", op_len) == 0) {
+        msg.type = atc_conn_closed, msg.id = conn_id;
+        atc_dispatch(&msg);
+        state = STATE_CLEAR;
+      } else if (op_len >= 9) {
+        // op too long unmatched
+        msg_op[op_len] = 0;
+        msg.type = atc_parse_error, msg.msg = msg_op;
+        atc_dispatch(&msg);
+        state = STATE_ERROR_CHAR;
+      } else {
+      }
+    } else {
+      // error char in op
+      msg_op[op_len == OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
+      msg.type = atc_parse_error, msg.msg = msg_op;
+      atc_dispatch(&msg);
+      state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
+    }
+  } break;
+
+  //+ipd:data
+  // entering this state ensures data_len>0 and data_offs=0
+  case STATE_IPD_DAT: {
+    // msg_buff[buff_offs] = c;
+    vbuff_iaddc(msg_buff, c);
+    buff_offs++;
+    if (buff_offs == buff_len) {
+      // end of +IPD
+      msg.type = atc_conn_recv, msg.pdata = msg_buff;
+      atc_dispatch(&msg);
+      state = STATE_CLEAR;
+    }
+  } break;
+
+  // error char
+  case STATE_ERROR_CHAR: {
+    if (isnewline(c) || isspace(c)) {
+      state = STATE_CLEAR;
+    }
+  } break;
+
+  default:
+    break;
+
+  } // switch
+  return state;
+}
+
+volatile uint8_t conn_state[NB_SOCK]; // 0 for close, 1 for open
+volatile QueueHandle_t conn_preaccepted;
+volatile uint8_t atc_parser_init_done = 0;
+
+void atc_parser_init() {
+  for (int i = 0; i < NB_SOCK; i++) {
+    conn_state[i] = 0;
+    conn_recv[i] = xQueueCreate(20, sizeof(atc_msg_t));
+    assert(conn_recv[i]);
+  }
+  conn_preaccepted = xQueueCreate(20, 1);
+  assert(conn_preaccepted);
+  atc_parser_init_done = 1;
+}
+
+void atc_dispatch(atc_msg_t *msg) {
+  switch (msg->type) {
+  default:
+    break;
+  }
+}

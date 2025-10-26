@@ -18,7 +18,7 @@ extern SemaphoreHandle_t atc_wonna; // impl in parser
 typedef enum {
   atc_start,     // AT
   atc_reset,     // AT+RST
-  atc_cwmode,    // AT+CWMODE=1
+  atc_cwmode,    // AT+CWMODE=3 (station+softap)
   atc_cwjap,     // AT+CWJAP=ssid:str,pwd:str
   atc_cipmux,    // AT+CIPMUX=1
   atc_cipserver, // AT+CIPSERVER=1,8080
@@ -26,18 +26,22 @@ typedef enum {
   atc_cipclose,  // AT+CIPCLOSE=id:u8
 } atc_cmd_type_t;
 
+// note: for cwjap, ssid/pwd are pass by reference; for cipsend, buff, id, len
+// is pass by reference; for cipclose, id is pass by reference; len is not
+// restricted by hardware, exec splits it if needed
+
 typedef struct {
   atc_cmd_type_t type;
   union {
     struct {
       uint8_t id;
       uint16_t len;
+      const void *buff;
     };
     struct {
       const vstr_t *s_ssid;
       const vstr_t *s_pwd; // pass by reference
     };
-    const vstr_t *buff;
   };
   QueueHandle_t exec_res;
 } atc_cmd_t;

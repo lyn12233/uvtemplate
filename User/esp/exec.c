@@ -58,7 +58,7 @@ void atc_exec(const atc_cmd_t *cmd) {
     atc_send("AT+RST\r\n", 8);
     break;
   case atc_cwmode:
-    atc_send("AT+CWMODE=1\r\n", 13);
+    atc_send("AT+CWMODE=2\r\n", 13);
     break;
   case atc_cwjap:
     s_ssid = cmd->s_ssid, s_pwd = cmd->s_pwd;
@@ -75,22 +75,36 @@ void atc_exec(const atc_cmd_t *cmd) {
   case atc_cipserver:
     atc_send("AT+CIPSERVER=1,8080\r\n", 21);
     break;
-  case atc_cipsend:
-    atc_send("AT+CIPSEND=", 11);
-    ibuff = itoa(cmd->id, 10);
-    atc_send(ibuff.str, strnlen(ibuff.str, 20));
-    atc_send(",", 1);
-    ibuff = itoa(cmd->len, 10);
-    atc_send(ibuff.str, strnlen(ibuff.str, 20));
-    atc_send("\r\n", 2);
 
-    // wait wonna state conditionally, force send upon failure
-    xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
-    if (res == atc_ok) {
-      xSemaphoreTake(atc_wonna, portMAX_DELAY);
+  case atc_cipsend: {
+    int offs = 0, cur_len;
+
+    while (offs < cmd->len) {
+      cur_len = offs + 1024 < cmd->len ? 1024 : (cmd->len - offs);
+
+      atc_send("AT+CIPSEND=", 11);
+      ibuff = itoa(cmd->id, 10);
+      atc_send(ibuff.str, strnlen(ibuff.str, 20));
+      atc_send(",", 1);
+      ibuff = itoa(cur_len, 10);
+      atc_send(ibuff.str, strnlen(ibuff.str, 20));
+      atc_send("\r\n", 2);
+
+      // wait wonna state conditionally, force send upon failure
+      xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
+      if (res == atc_ok) {
+        xSemaphoreTake(atc_wonna, portMAX_DELAY);
+      }
+      atc_send(&cmd->buff[offs], cur_len);
+
+      if (res != atc_ok)
+        break;
+
+      offs += cur_len;
     }
-    atc_send(cmd->buff->data, cmd->buff->len);
-    break;
+
+  } break;
+
   case atc_cipclose:
     atc_send("AT+CIPCLOSE=", 12);
     ibuff = itoa(cmd->id, 10);

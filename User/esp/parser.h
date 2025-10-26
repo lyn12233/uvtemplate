@@ -5,6 +5,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "semphr.h"
+#include "types/vo.h"
 
 #include <stdint.h>
 
@@ -35,19 +36,18 @@ typedef enum {
   atc_inval,
 } atc_msg_type_t;
 
+// note: when receiving x,CONNECTED/CLOSED, id is set; when receiving
+// +IPD,id,len,pdata is set, caller responsible for deleting pdata
+
 typedef struct {
   atc_msg_type_t type;
   union {
     struct {
       uint8_t id;
       uint16_t len;
+      vstr_t *pdata;
     };
-    void *pdata;
     const char *msg;
-    struct {
-      uint16_t buff_len;
-      uint8_t *pbuff;
-    };
   };
 } atc_msg_t;
 

@@ -109,9 +109,12 @@ void vbuff_iaddu64(vstr_t *str, uint64_t c) {
 }
 void vbuff_iadd(vstr_t *str, const char *pc, uint32_t len) {
   assert(str->len + len < VO_STRMAX);
-  vstr_reserve(str, str->len + len);
+  uint32_t new_len = str->len + len;
+  if (!new_len)
+    return; // ensure data not null
+  vstr_reserve(str, new_len);
   memcpy(&str->data[str->len], pc, len);
-  str->len += len;
+  str->len = new_len;
 }
 
 // variable length list(array)

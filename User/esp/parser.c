@@ -1,6 +1,7 @@
 ///@file parser.c
 #include "parser.h"
 
+#include "portmacro.h"
 #include "types/vo.h"
 
 #include <stdint.h>
@@ -70,6 +71,8 @@ uint8_t atc_parse_char(uint8_t c) {
     // clear
   case STATE_CLEAR: {
     if (isnewline(c) || isspace(c)) {
+    } else if (c == '>') {
+      xSemaphoreGive(atc_wonna);
     } else if (isdigit(c)) {
       // x,CONNECTED/CLOSED
       // clear vars
@@ -255,10 +258,14 @@ uint8_t atc_parse_char(uint8_t c) {
 }
 
 volatile uint8_t conn_state[NB_SOCK]; // 0 for close, 1 for open
-volatile QueueHandle_t conn_preaccepted;
+QueueHandle_t conn_preaccepted;
 volatile uint8_t atc_parser_init_done = 0;
+QueueHandle_t conn_recv[NB_SOCK];
+SemaphoreHandle_t atc_wonna;
 
 void atc_parser_init() {
+  if (atc_parser_init_done)
+    return;
   for (int i = 0; i < NB_SOCK; i++) {
     conn_state[i] = 0;
     conn_recv[i] = xQueueCreate(20, sizeof(atc_msg_t));
@@ -266,6 +273,8 @@ void atc_parser_init() {
   }
   conn_preaccepted = xQueueCreate(20, 1);
   assert(conn_preaccepted);
+  atc_wonna = xSemaphoreCreateBinary();
+  assert(atc_wonna);
   atc_parser_init_done = 1;
 }
 
@@ -273,5 +282,17 @@ void atc_dispatch(atc_msg_t *msg) {
   switch (msg->type) {
   default:
     break;
+  }
+}
+
+extern QueueHandle_t m_esp8266_qin;
+
+void atc_parser_loop() {
+  while (1) {
+    uint8_t recvbyte;
+    if (!m_esp8266_qin)
+      continue;
+    xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
+    atc_parse_char(recvbyte);
   }
 }

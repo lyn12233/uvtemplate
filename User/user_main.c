@@ -34,14 +34,7 @@
 
 int user_main() {
 
-  HAL_Init(); // HAL lib init
-
-  SystemClock_Config(); // config sys clock
-
-  //
-  // initialize all configured peripherals
-  LED_init();
-  usart1_init();
+  user_init();
 
   pvPortMalloc(1); // makes systick_handler not available under non task cxt
 

@@ -7,7 +7,8 @@
 ///@defgroup types_vo
 ///@brief variant object to represent ssh binary packet format
 ///@details see RFC 4253 chapter 6 "Binary Packet Protocol" and RFC 4251 chapter
-/// 5 "Data Type Representations Used in the SSH Protocols"
+/// 5 "Data Type Representations Used in the SSH Protocols". @note assumes vstr,
+/// vlist, vo are valid as {0}
 ///@{
 
 /// max chars in a string(excluding), note packet size limit is 2^32-1
@@ -17,7 +18,7 @@
 
 /// types defined in rfc 4251
 typedef enum {
-  vot_bool,
+  vot_bool = 0,
   vot_u8,
   vot_u32,
   vot_u64,
@@ -29,8 +30,8 @@ typedef enum {
 ///@struct vstr_t
 ///@brief variable length string, also used as buff
 typedef struct {
-  uint32_t len : 24;
-  uint32_t reserved : 24;
+  uint32_t len;
+  uint32_t reserved;
   union {
     char *data;
     uint8_t *buff;
@@ -40,8 +41,8 @@ typedef struct {
 ///@struct vlist_t
 ///@brief variable length list of vo_t
 typedef struct {
-  uint32_t nb : 24;
-  uint32_t reserved : 24;
+  uint32_t nb;
+  uint32_t reserved;
   struct vo_s *data;
 } vlist_t;
 

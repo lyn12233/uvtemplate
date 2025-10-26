@@ -4,6 +4,7 @@
 
 #include "FreeRTOS.h"
 #include "queue.h"
+#include "semphr.h"
 
 #include <stdint.h>
 
@@ -55,8 +56,10 @@ uint8_t atc_parse_char(uint8_t c);
 void atc_dispatch(atc_msg_t *msg);
 
 // rtos-level api's leading to socket api
+void atc_parser_loop();
 void atc_parser_init();
 extern volatile uint8_t atc_parser_init_done;
 extern volatile uint8_t conn_state[NB_SOCK];
-extern volatile QueueHandle_t conn_preaccepted;
-extern volatile QueueHandle_t conn_recv[NB_SOCK];
+extern QueueHandle_t conn_preaccepted;
+extern QueueHandle_t conn_recv[NB_SOCK];
+extern SemaphoreHandle_t atc_wonna;

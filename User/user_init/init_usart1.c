@@ -1,5 +1,6 @@
 ///@file usart_init.c
 #include "initors.h"
+#include "portmacro.h"
 #include "stm32f103xe.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
@@ -35,9 +36,13 @@ void usart1_init() {
 
 ///@brief usart3 handler
 USART_HandleTypeDef m_u3h;
-///@brief esp8266-usart recv queue(ringbuff) instance
-QueueHandle_t m_esp8266_qin;
-///@brief usart3-esp8266-s wifi port init
+///@brief esp8266-usart recv queue(ringbuff) instance, 256*1
+QueueHandle_t m_esp8266_qin = NULL;
+uint8_t m_esp8266_recvbyte;
+SemaphoreHandle_t m_esp8266_senddone = NULL;
+
+///@brief usart3-esp8266-s wifi port init, consists of peripheral config + queue
+/// init + semaphore init + interrupt recv start
 void usart3_init() {
   __HAL_RCC_USART3_CLK_ENABLE();
   m_u3h = (USART_HandleTypeDef){
@@ -53,14 +58,20 @@ void usart3_init() {
   };
   assert(HAL_USART_Init(&m_u3h) == HAL_OK);
 
-  // init queue and interrupt
+  // init queue and semaphore
   if (!m_esp8266_qin) {
     m_esp8266_qin = xQueueCreate(256, 1);
     assert(m_esp8266_qin); // alway abort; thus recom init usart1 first
   }
+  if (!m_esp8266_senddone) {
+    m_esp8266_senddone = xSemaphoreCreateBinary();
+    assert(m_esp8266_senddone);
+  }
   // start receiving
   HAL_USART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
 }
+
+// usart msp init
 
 ///@brief usart pin init, do not call directly
 void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
@@ -94,7 +105,7 @@ void HAL_USART_MspInit(USART_HandleTypeDef *husart) {
   }
 }
 
-///@brief uart3 interrupt handler in NVIC table
+///@brief usart3 interrupt handler in NVIC table
 void USART3_IRQHandler() { HAL_USART_IRQHandler(&m_u3h); }
 
 ///@brief esp8266 recv byte complete callback
@@ -104,6 +115,16 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
       return;
     xQueueSendFromISR(m_esp8266_qin, &m_esp8266_recvbyte, NULL);
     HAL_USART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
+  }
+}
+
+///@brief esp8266 send byte complete callback
+void HAL_USART_TxCpltCallback(USART_HandleTypeDef *husart) {
+  if (husart->Instance == USART3) {
+    if (!m_esp8266_senddone)
+      return;
+    BaseType_t yield_flag = pdFALSE;
+    xSemaphoreGiveFromISR(m_esp8266_senddone, &yield_flag);
   }
 }
 

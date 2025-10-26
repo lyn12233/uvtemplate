@@ -252,6 +252,32 @@ static uint8_t is_packet(const vo_t *vo) {
   return 1;
 }
 
+void vo_copy(const vo_t *src, vo_t *dst) {
+  vo_clear(dst);
+  dst->type = src->type;
+  switch (src->type) {
+  case vot_bool:
+  case vot_u8:
+    dst->u8 = src->u8;
+    break;
+  case vot_u32:
+    dst->u32 = src->u32;
+    break;
+  case vot_u64:
+    dst->u64 = src->u64;
+    break;
+  case vot_string:
+  case vot_mpint:
+    vstr_copy(&src->vstr, &dst->vstr);
+    break;
+  case vot_list:
+    vlist_copy(&src->vlist, &dst->vlist);
+    break;
+  default:
+    assert(0 && UNREACHABLE);
+  }
+}
+
 vstr_t *vo_tobuff(const vo_t *vo) {
   if (!is_packet(vo)) {
     printf("vo_tobuff: not a valid packet\r\n");
@@ -261,6 +287,8 @@ vstr_t *vo_tobuff(const vo_t *vo) {
   vstr_t *res = vstr_create(256);
   for (int i = 0; i < vo->vlist.nb; i++) {
     const vo_t *item = &vo->vlist.data[i];
+    int nl_size; // to collect size of namelist
+
     switch (item->type) {
     case vot_bool:
     case vot_u8:
@@ -278,7 +306,7 @@ vstr_t *vo_tobuff(const vo_t *vo) {
       vbuff_iadd(res, item->vstr.data, item->vstr.len);
       break;
     case vot_list:
-      int nl_size = item->vlist.nb ? item->vlist.nb - 1 : 0;
+      nl_size = item->vlist.nb ? item->vlist.nb - 1 : 0;
       for (int j = 0; j < item->vlist.nb; j++) {
         nl_size += item->vlist.data[j].vstr.len;
       }

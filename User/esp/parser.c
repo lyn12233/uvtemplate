@@ -2,12 +2,18 @@
 #include "parser.h"
 
 #include "portmacro.h"
+#include "projdefs.h"
 #include "types/vo.h"
 
 #include <stdint.h>
 #include <string.h>
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+
 #include "log.h"
+#include "port_errno.h"
 
 // behavior: parsing AT command streams, recognizing format:
 //     - <MSG>\r\n where MSG is a subset of messages that may appear
@@ -19,6 +25,8 @@
 // where operation codes, both MSG and CONNECTED/CLOSED, size restricted by
 // OP_MAXLEN(excluding); where id restricted by ID_MAX, len restricted by
 // BUFF_MAXLEN
+// recommend: op related fields (id,len,data) is cleared right after op is
+// determined
 
 #define OP_MAXLEN 32     // included
 #define BUFF_MAXLEN 2048 // included
@@ -34,8 +42,7 @@
 #define STATE_ERROR_CHAR 7
 
 static char msg_op[OP_MAXLEN];
-static vstr_t msg_buff_store = {0};
-static vstr_t *const msg_buff = &msg_buff_store;
+static vstr_t *msg_buff = NULL; // will not used after init
 static uint16_t op_len;
 static uint16_t conn_id;
 static uint16_t buff_len;
@@ -56,6 +63,8 @@ static inline uint8_t isspace(uint8_t c) { //
   return c == ' ' || c == '\t';
 }
 
+uint8_t state_clear_local = 0;
+
 void atc_parser_clear() {
   //
   op_len = 0;
@@ -64,23 +73,32 @@ void atc_parser_clear() {
   buff_offs = 0;
   state = STATE_CLEAR;
   msg_op[0] = 0;
+  state_clear_local = 1;
 }
+
+// entering ensures atc_parser_init_done=1
+
 uint8_t atc_parse_char(uint8_t c) {
   switch (state) {
 
     // clear
   case STATE_CLEAR: {
     if (isnewline(c) || isspace(c)) {
+
     } else if (c == '>') {
+      // data transfer ready
       xSemaphoreGive(atc_wonna);
+
     } else if (isdigit(c)) {
       // x,CONNECTED/CLOSED
       // clear vars
       conn_id = c - '0', buff_len = 0, buff_offs = 0, op_len = 0;
       state = STATE_CONN_ID;
+
     } else if (isalpha(c) || c == '+') {
       msg_op[0] = c, op_len = 1;
       state = STATE_MSG_OP;
+
     } else {
       state = STATE_ERROR_CHAR;
     }
@@ -102,15 +120,17 @@ uint8_t atc_parse_char(uint8_t c) {
         state = STATE_ERROR_CHAR;
       }
     } else if (isalpha(c) || isspace(c)) {
-      op_len++;
-      if (op_len > OP_MAXLEN) {
+
+      if (op_len >= OP_MAXLEN) {
         msg_op[OP_MAXLEN - 1] = 0;
         msg.type = atc_parse_error, msg.msg = msg_op;
         atc_dispatch(&msg);
         state = STATE_ERROR_CHAR;
       } else {
-        msg_op[op_len - 1] = c;
+        msg_op[op_len] = c;
+        op_len++;
       }
+
     } else if (isnewline(c)) {
       if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
         msg.type = atc_ok;
@@ -235,12 +255,16 @@ uint8_t atc_parse_char(uint8_t c) {
     // msg_buff[buff_offs] = c;
     vbuff_iaddc(msg_buff, c);
     buff_offs++;
+
     if (buff_offs == buff_len) {
-      // end of +IPD
-      msg.type = atc_conn_recv, msg.pdata = msg_buff;
+      // end of +IPD: create new buff to construct msg
+      vstr_t *tmp = msg_buff;
+      msg_buff = vstr_create(0);
+      msg.type = atc_conn_recv, msg.pdata = tmp;
       atc_dispatch(&msg);
       state = STATE_CLEAR;
     }
+
   } break;
 
   // error char
@@ -254,6 +278,12 @@ uint8_t atc_parse_char(uint8_t c) {
     break;
 
   } // switch
+
+  if (!state_clear_local && state == STATE_CLEAR) {
+    xSemaphoreGive(atc_cansend);
+  }
+  state_clear_local = state == STATE_CLEAR;
+
   return state;
 }
 
@@ -262,10 +292,13 @@ QueueHandle_t conn_preaccepted;
 volatile uint8_t atc_parser_init_done = 0;
 QueueHandle_t conn_recv[NB_SOCK];
 SemaphoreHandle_t atc_wonna;
+SemaphoreHandle_t atc_cansend;
+QueueHandle_t atc_sendres;
 
 void atc_parser_init() {
   if (atc_parser_init_done)
     return;
+
   for (int i = 0; i < NB_SOCK; i++) {
     conn_state[i] = 0;
     conn_recv[i] = xQueueCreate(20, sizeof(atc_msg_t));
@@ -275,24 +308,88 @@ void atc_parser_init() {
   assert(conn_preaccepted);
   atc_wonna = xSemaphoreCreateBinary();
   assert(atc_wonna);
+  atc_cansend = xSemaphoreCreateBinary();
+  assert(atc_cansend);
+  atc_sendres = xQueueCreate(20, sizeof(atc_msg_type_t));
+  assert(atc_sendres);
+
+  msg_buff = vstr_create(0);
+
+  atc_parser_clear();
+
   atc_parser_init_done = 1;
 }
 
 void atc_dispatch(atc_msg_t *msg) {
   switch (msg->type) {
+
+  // messages send to sendres
+  case atc_parse_error:
+  case atc_inval:
+    // hint the message
+    if (msg->type == atc_parse_error) {
+      printf("atc_dispatch: parser error: %s\r\n", msg->msg);
+    } else {
+      printf("atc_dispatch: invalid values: id=%d, len=%d\r\n", msg->id,
+             msg->len);
+    }
+    // fall-through
+  case atc_unknown:
+  case atc_ok:
+  case atc_error:
+  case atc_send_ok:
+  case atc_send_fail: {
+    xQueueSend(atc_sendres, &msg->type, ATC_SENDRES_TIMEOUT);
+  } break;
+
+  // hint messages
+  case atc_ready:
+  case atc_busy:
+  case atc_wifi_connected:
+  case atc_wifi_got_ip:
+  case atc_wifi_disconnect: {
+    printf("atc_dispatch: message: %d\r\n", msg->type);
+  } break;
+
+    // conn opts, unimpl
+
+  case atc_conn_accepted: {
+    if (conn_state[msg->id])
+      break;
+    conn_state[msg->id] = 1;
+    xQueueReset(conn_recv[msg->id]);
+    xQueueSend(conn_preaccepted, &msg->id, portMAX_DELAY);
+  } break;
+
+  case atc_conn_closed: {
+    // from the socket view, conn state is deter by conn_state and queue
+    conn_state[msg->id] = 0;
+  } break;
+
+  case atc_conn_recv: {
+    if (!conn_state[msg->id])
+      break;
+    xQueueSend(conn_recv[msg->id], msg, portMAX_DELAY);
+  } break;
+
   default:
-    break;
+    assert(0 && EUNREACHABLE);
   }
 }
 
-extern QueueHandle_t m_esp8266_qin;
+extern QueueHandle_t m_esp8266_qin; // in usart init
 
 void atc_parser_loop() {
   while (1) {
     uint8_t recvbyte;
     if (!m_esp8266_qin)
       continue;
-    xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
-    atc_parse_char(recvbyte);
+
+    // move assign
+    BaseType_t pass = xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
+
+    if (pass == pdTRUE) {
+      atc_parse_char(recvbyte);
+    }
   }
 }

@@ -854,6 +854,11 @@
               <FileType>1</FileType>
               <FilePath>.\User\esp\exec.c</FilePath>
             </File>
+            <File>
+              <FileName>espsock.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\esp\espsock.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

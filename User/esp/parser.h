@@ -10,6 +10,8 @@
 
 // number of sock entries, larger that physically supported
 #define NB_SOCK 8
+// sendres timeout
+#define ATC_SENDRES_TIMEOUT 20
 
 typedef enum {
   atc_unknown,
@@ -60,6 +62,8 @@ void atc_parser_loop();
 void atc_parser_init();
 extern volatile uint8_t atc_parser_init_done;
 extern volatile uint8_t conn_state[NB_SOCK];
-extern QueueHandle_t conn_preaccepted;
-extern QueueHandle_t conn_recv[NB_SOCK];
-extern SemaphoreHandle_t atc_wonna;
+extern QueueHandle_t conn_preaccepted;   // 20*1
+extern QueueHandle_t conn_recv[NB_SOCK]; // 20*<msg>
+extern SemaphoreHandle_t atc_wonna;      // data transfer ready state
+extern SemaphoreHandle_t atc_cansend;    // send clear state
+extern QueueHandle_t atc_sendres;        // 20*<msg_type>

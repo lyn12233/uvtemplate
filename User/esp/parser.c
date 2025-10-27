@@ -224,7 +224,7 @@ uint8_t atc_parse_char(uint8_t c) {
       // buffer sufficient (31 > 9)
       msg_op[op_len] = c;
       op_len++;
-      if (op_len == 9 && strncmp(msg_op, "CONNECTED", op_len) == 0) {
+      if (op_len == 7 && strncmp(msg_op, "CONNECT", op_len) == 0) {
         msg.type = atc_conn_accepted, msg.id = conn_id;
         atc_dispatch(&msg);
         state = STATE_CLEAR;
@@ -334,7 +334,7 @@ void atc_dispatch(atc_msg_t *msg) {
              msg->len);
     }
     // fall-through
-  case atc_unknown:
+  case atc_unknown: // unused
   case atc_ok:
   case atc_error:
   case atc_send_ok:

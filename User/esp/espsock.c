@@ -16,7 +16,6 @@ vstr_t *esk_recv_buff[NB_SOCK];
 
 static atc_cmd_type_t init_cmds[] = {
     atc_start,  //
-    atc_cwmode, //
     atc_cipmux, //
 };
 
@@ -43,14 +42,14 @@ int sock_init() {
     assert(esk_recv_buff[i]);
   }
 
-  // TODO: AT, RST, CWMODE, CWJAP, CIPMUX
-  // TODO: wifi loging in pppoe
+  // TODO: AT, RST, CWMODE, CWJAP, CIPMUX (mode, jap are stored, mux not)
+  // TODO: wifi loging in pppoe (not supported)
   atc_cmd_t cmd;
   int res;
 
   cmd.exec_res = esk_lstn_res;
 
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < sizeof(init_cmds) / sizeof(atc_cmd_type_t); i++) {
     cmd.type = init_cmds[i];
     atc_exec(&cmd);
     res = xQueueReceive(esk_lstn_res, &res, portMAX_DELAY);
@@ -127,6 +126,8 @@ int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags) {
     return ENOTCONN;
   if (size > buff->len)
     size = buff->len;
+  if (flags)
+    return EINVAL;
   if (size == 0)
     return 0;
 

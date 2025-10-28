@@ -859,6 +859,11 @@
               <FileType>1</FileType>
               <FilePath>.\User\esp\espsock.c</FilePath>
             </File>
+            <File>
+              <FileName>init_sdio.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\user_init\init_sdio.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

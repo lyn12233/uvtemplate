@@ -49,6 +49,6 @@ int sock_send(int sockfd, const vstr_t *buff, uint16_t len, int flags);
 ///@param sockfd socket fd from sock_init, 0..4
 ///@param buff buffer to receive data into, reference
 ///@param size max size to receive, actual size is less than both buff->len and
-///@param flags unused, default blocking
+///@param flags unused, default blocking, MBZ
 ///@return number of bytes received or negative errno
 int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags);

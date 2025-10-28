@@ -6,7 +6,6 @@
 #include "esp/parser.h"
 #include "main.h" //for system clock config
 
-
 #include "stm32f1xx_hal.h"
 
 #include "log.h"
@@ -32,6 +31,7 @@ void user_init() {
   // -- logging enabled --
   puts("==========logging-enaled==========");
   usart3_init();
+  sdio_init();
 
   atc_parser_init();
   xTaskCreate(                                   //

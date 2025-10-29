@@ -10,13 +10,15 @@
 #include "log.h"
 
 void BlinkTask(void *p) {
+  int cnt = 0;
   while (1) {
-    // puts("blink");
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-    // pvPortMalloc(1);
-    printf("free size: %d\r\n", (int)xPortGetFreeHeapSize());
 
-    vTaskDelay(30000); // fine
+    cnt = (cnt + 1) % 30;
+    if (!cnt)
+      printf("free size: %d\r\n", (int)xPortGetFreeHeapSize());
+
+    vTaskDelay(700); // fine
     // HAL_Delay(700); // fine
   }
 }

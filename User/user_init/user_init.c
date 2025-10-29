@@ -39,19 +39,19 @@ void user_init() {
   // sdio_init();
   // puts("sdio init done");
 
-  // atc_parser_init();
-  // puts("parser init done");
-  // xTaskCreate(                                   //
-  //     parser_task, "at command parser",          //
-  //     1024, NULL, configMAX_PRIORITIES - 2, NULL //
-  // );
+  atc_parser_init();
+  puts("parser init done");
+  xTaskCreate(                                   //
+      parser_task, "at command parser",          //
+      1024, NULL, configMAX_PRIORITIES - 2, NULL //
+  );
 
-  // atc_exec_init();
-  // puts("exec init done");
-  // xTaskCreate(                                   //
-  //     exec_task, "at command executor",          //
-  //     1024, NULL, configMAX_PRIORITIES - 2, NULL //
-  // );
+  atc_exec_init();
+  puts("exec init done");
+  xTaskCreate(                                   //
+      exec_task, "at command executor",          //
+      1024, NULL, configMAX_PRIORITIES - 2, NULL //
+  );
 
   puts("===user-defined-initialization-done===");
   puts("=user-deinfed-backgrounds-all-started=");

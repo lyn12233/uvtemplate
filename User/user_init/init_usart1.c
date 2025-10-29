@@ -1,15 +1,13 @@
 ///@file uart_init.c
 #include "initors.h"
-
 #include "main.h"
-#include "stm32_hal_legacy.h"
-#include "stm32f1xx_hal.h"
-#include "stm32f1xx_hal_cortex.h"
-#include "stm32f1xx_hal_def.h"
-#include "stm32f1xx_hal_dma.h"
+
+#include "projdefs.h"
 #include "user_init/initors.h"
 
-#include "stm32f103xe.h"
+#include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_def.h"
+#include "stm32f1xx_hal_dma.h"
 #include "stm32f1xx_hal_gpio.h"
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_rcc_ex.h"
@@ -26,22 +24,24 @@
 ///@ingroup user_init
 ///@{
 
+//
+// USART1 part
+
 // gpio-uart1 init
 ///@brief uart1 handle
 UART_HandleTypeDef m_uh = {0};
-DMA_HandleTypeDef m_u1dma = {0};
 
 #define SZ_DMA1C5_BUF 256
 uint8_t m_u1dma_buf[SZ_DMA1C5_BUF];
 
-SemaphoreHandle_t u1dma_sem = NULL;
-static void u1dma_process(void *p);
+SemaphoreHandle_t u1recv_sem = NULL;
+uint8_t u1recv_byte;
+static void u1recv_process(void *p);
 
 ///@brief uart1-default logger init, call in the main entry
 void uart1_init() {
   __HAL_RCC_USART1_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
-  __HAL_RCC_DMA1_CLK_ENABLE();
 
   // init pa9-tx pa10-rx
   GPIO_InitTypeDef gi;
@@ -71,92 +71,81 @@ void uart1_init() {
   };
   HAL_UART_Init(&m_uh);
 
-  // logging enabled here
-
-  // rx dma init
-  m_u1dma = (DMA_HandleTypeDef){
-      .Instance = DMA1_Channel5,
-      .Init =
-          (DMA_InitTypeDef){
-              .Direction = DMA_PERIPH_TO_MEMORY,
-              .PeriphInc = DMA_PINC_DISABLE,
-              .MemInc = DMA_MINC_ENABLE,
-              .PeriphDataAlignment = DMA_PDATAALIGN_BYTE,
-              .MemDataAlignment = DMA_MDATAALIGN_BYTE,
-              .Mode = DMA_NORMAL,
-              .Priority = DMA_PRIORITY_LOW,
-          },
-  };
-  if (HAL_DMA_Init(&m_u1dma) != HAL_OK) {
-    assert(0);
-  }
-
-  // relate dma to uart1 rx
-  __HAL_LINKDMA(&m_uh, hdmarx, m_u1dma);
-
   // nvic config interrupt pri and enable
   HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
-  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
-  // start dma rx
-  HAL_StatusTypeDef res =
-      HAL_UART_Receive_DMA(&m_uh, m_u1dma_buf, SZ_DMA1C5_BUF);
+  // start test task; should be replaced
+  u1recv_sem = xSemaphoreCreateBinary();
+  assert(u1recv_sem);
+  xTaskCreate(u1recv_process, "u1_process", 512, NULL, configMAX_PRIORITIES - 3,
+              NULL);
 
-  __HAL_UART_ENABLE_IT(&m_uh, UART_IT_IDLE);
-
-  // start processing task
-  u1dma_sem = xSemaphoreCreateBinary();
-
-  xTaskCreate(u1dma_process, "u1dma_process", 512, NULL,
-              configMAX_PRIORITIES - 3, NULL);
+  // start first receive
+  HAL_StatusTypeDef res;
+  res = HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
+  assert(res == HAL_OK);
 }
 
 // uart1 interrupt handlers
 // irq handler
-void UART1_IRQHandler() {
+void USART1_IRQHandler() {
   HAL_UART_IRQHandler(&m_uh);
-  if (__HAL_UART_GET_FLAG(&m_uh, UART_FLAG_IDLE)) {
+
+  // clear flags
+  if (__HAL_UART_GET_FLAG(&m_uh, UART_FLAG_IDLE) ||
+      __HAL_UART_GET_FLAG(&m_uh, UART_FLAG_ORE)) {
     volatile uint32_t tmp;
     tmp = m_uh.Instance->SR;
     tmp = m_uh.Instance->DR;
     (void)tmp;
-
-    puts("IDLE");
-
-    if (u1dma_sem && 0) {
-      BaseType_t yield_flag = pdFALSE;
-      xSemaphoreGiveFromISR(u1dma_sem, &yield_flag);
-      portYIELD_FROM_ISR(yield_flag);
-    }
   }
 }
-// dma irq handler
-void DMA1_Channel5_IRQHandler() { //
-  HAL_DMA_IRQHandler(&m_u1dma);
+
+// recv complete callback
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+  if (huart->Instance == USART1) {
+    // puts("here");
+
+    if (u1recv_sem) {
+      BaseType_t shouldyield = pdFALSE;
+      xSemaphoreGiveFromISR(u1recv_sem, &shouldyield);
+      xQueueSendFromISR(m_esp8266_qin, &u1recv_byte, &shouldyield);
+      portYIELD_FROM_ISR(shouldyield);
+    }
+
+    HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
+  }
 }
+
 // error callback
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART1) {
+
+    // clear error
     volatile uint32_t tmp;
     tmp = huart->Instance->SR;
     tmp = huart->Instance->DR;
     (void)tmp;
-    HAL_UART_Receive_DMA(&m_uh, m_u1dma_buf, SZ_DMA1C5_BUF);
+
+    HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
   }
 }
 
 // implementation of dma processing task
-static void u1dma_process(void *p) {
+static void u1recv_process(void *p) {
   (void)p;
   size_t last_pos = 0;
+  puts("u1recv start");
   while (1) {
-    if (xSemaphoreTake(u1dma_sem, portMAX_DELAY) == pdTRUE) {
-      puts("u1dma_process: got sem\r\n");
+    if (xSemaphoreTake(u1recv_sem, portMAX_DELAY) == pdTRUE) {
+      // puts("u1dma_process: got sem");
     }
   }
 }
+
+//
+// USART3 part
 
 ///@brief uart3 handler
 UART_HandleTypeDef m_u3h;
@@ -200,7 +189,7 @@ void uart3_init() {
           },
   };
   assert(HAL_UART_Init(&m_u3h) == HAL_OK);
-  HAL_NVIC_SetPriority(USART3_IRQn, 3, 0);
+  HAL_NVIC_SetPriority(USART3_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(USART3_IRQn);
 
   // init queue and semaphore
@@ -219,26 +208,8 @@ void uart3_init() {
 }
 
 ///@brief uart3 interrupt handler in NVIC table
-void UART3_IRQHandler() { //
+void USART3_IRQHandler() { //
   HAL_UART_IRQHandler(&m_u3h);
-}
-
-///@brief esp8266 recv byte complete callback
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-  if (huart->Instance == USART3) {
-
-    uint8_t b = m_esp8266_recvbyte;
-    printf("recv byte%02x\r\n", b);
-
-    // send to q
-    if (m_esp8266_qin) {
-      BaseType_t yeild_flag = pdFALSE;
-      xQueueSendFromISR(m_esp8266_qin, &b, &yeild_flag);
-      (void)yeild_flag;
-    }
-
-    HAL_UART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
-  }
 }
 
 ///@brief esp8266 send byte complete callback

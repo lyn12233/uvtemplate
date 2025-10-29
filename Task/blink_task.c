@@ -13,10 +13,10 @@ void BlinkTask(void *p) {
   while (1) {
     // puts("blink");
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
-    pvPortMalloc(1);
+    // pvPortMalloc(1);
     printf("free size: %d\r\n", (int)xPortGetFreeHeapSize());
 
-    vTaskDelay(700); // fine
+    vTaskDelay(30000); // fine
     // HAL_Delay(700); // fine
   }
 }

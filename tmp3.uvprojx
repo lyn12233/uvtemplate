@@ -874,6 +874,11 @@
               <FileType>1</FileType>
               <FilePath>.\Task\blink_task.c</FilePath>
             </File>
+            <File>
+              <FileName>tcp_echo_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Task\tcp_echo_task.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

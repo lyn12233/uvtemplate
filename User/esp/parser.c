@@ -73,7 +73,7 @@ void atc_parser_clear() {
   buff_offs = 0;
   state = STATE_CLEAR;
   msg_op[0] = 0;
-  state_clear_local = 1;
+  state_clear_local = 0;
 }
 
 // entering ensures atc_parser_init_done=1
@@ -133,21 +133,25 @@ uint8_t atc_parse_char(uint8_t c) {
 
     } else if (isnewline(c)) {
       if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
+        debug("atc_parser: OK\r\n");
         msg.type = atc_ok;
         atc_dispatch(&msg);
       } else if (op_len == 5 && strncmp(msg_op, "ERROR", op_len) == 0) {
+        debug("atc_parser: ERROR\r\n");
         msg.type = atc_error;
         atc_dispatch(&msg);
       } else if (op_len == 7 && strncmp(msg_op, "SEND OK", op_len) == 0) {
+        debug("atc_parser: SEND OK\r\n");
         msg.type = atc_send_ok;
         atc_dispatch(&msg);
       } else if (op_len == 9 && strncmp(msg_op, "SEND FAIL", op_len) == 0) {
+        debug("atc_parser: SEND FAIL\r\n");
         msg.type = atc_send_fail;
         atc_dispatch(&msg);
       } else if (op_len == 5 && strncmp(msg_op, "ready", op_len) == 0) {
         msg.type = atc_ready;
         atc_dispatch(&msg);
-      } else if (op_len >= 6 && strncmp(msg_op, "busy p", 6) == 0) {
+      } else if (op_len >= 9 && strncmp(msg_op, "busy p...", 9) == 0) {
         msg.type = atc_busy;
         atc_dispatch(&msg);
       } else if ( //
@@ -280,6 +284,7 @@ uint8_t atc_parse_char(uint8_t c) {
   } // switch
 
   if (!state_clear_local && state == STATE_CLEAR) {
+    debug("atc_parser: cansend semaphore give\r\n");
     xSemaphoreGive(atc_cansend);
   }
   state_clear_local = state == STATE_CLEAR;
@@ -287,15 +292,16 @@ uint8_t atc_parse_char(uint8_t c) {
   return state;
 }
 
+volatile uint8_t atc_parser_init_done = 0;
 volatile uint8_t conn_state[NB_SOCK]; // 0 for close, 1 for open
 QueueHandle_t conn_preaccepted;
-volatile uint8_t atc_parser_init_done = 0;
-QueueHandle_t conn_recv[NB_SOCK];
-SemaphoreHandle_t atc_wonna;
-SemaphoreHandle_t atc_cansend;
-QueueHandle_t atc_sendres;
+QueueHandle_t conn_recv[NB_SOCK] = {0};
+SemaphoreHandle_t atc_wonna = NULL;
+SemaphoreHandle_t atc_cansend = NULL;
+QueueHandle_t atc_sendres = NULL;
 
 void atc_parser_init() {
+  debug("atc_parser_init: enter\r\n");
   if (atc_parser_init_done)
     return;
 
@@ -317,8 +323,14 @@ void atc_parser_init() {
 
   atc_parser_clear();
 
+  xSemaphoreGive(atc_cansend);
+
+  debug("atc_parser_init: done\r\n");
+
   atc_parser_init_done = 1;
 }
+
+// dispatch
 
 void atc_dispatch(atc_msg_t *msg) {
   switch (msg->type) {
@@ -339,6 +351,7 @@ void atc_dispatch(atc_msg_t *msg) {
   case atc_error:
   case atc_send_ok:
   case atc_send_fail: {
+    debug("atc_dispatch: sendres message: %d\r\n", msg->type);
     xQueueSend(atc_sendres, &msg->type, ATC_SENDRES_TIMEOUT);
   } break;
 
@@ -354,6 +367,7 @@ void atc_dispatch(atc_msg_t *msg) {
     // conn opts, unimpl
 
   case atc_conn_accepted: {
+    debug("atc_dispatch: conn accepted id=%d\r\n", msg->id);
     if (conn_state[msg->id])
       break;
     conn_state[msg->id] = 1;
@@ -380,16 +394,26 @@ void atc_dispatch(atc_msg_t *msg) {
 extern QueueHandle_t m_esp8266_qin; // in usart init
 
 void atc_parser_loop() {
+  puts("atc_parser_loop: enter\r\n");
+  HAL_USART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
+  debug("atc_parser_loop: started receiving\r\n");
+
   while (1) {
     uint8_t recvbyte;
-    if (!m_esp8266_qin)
+    if (!m_esp8266_qin) {
+      puts("atc_parser_loop: waiting for m_esp8266_qin\r\n");
+      vTaskDelay(pdMS_TO_TICKS(1000));
       continue;
+    }
 
     // move assign
     BaseType_t pass = xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
 
     if (pass == pdTRUE) {
+      debug("atc_parser_loop: received byte: 0x%02x\r\n", recvbyte);
       atc_parse_char(recvbyte);
+    } else {
+      debug("atc_parser_loop: xQueueReceive failed\r\n");
     }
   }
 }

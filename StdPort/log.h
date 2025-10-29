@@ -23,7 +23,6 @@ buff20_t lftoa(double val, char width, char precision, char fill);
 #include "stm32f1xx_hal_usart.h"
 #include "user_init/initors.h"
 
-
 #include <stdio.h>
 #include <string.h>
 
@@ -44,3 +43,13 @@ int putchar_v2(int val);
     }                                                                          \
   }
 #define assert(x) CHECK_FAIL(x)
+
+#if 1
+
+#define debug printf_v2
+#else
+#define debug(...)                                                             \
+  do {                                                                         \
+  } while (0)
+
+#endif

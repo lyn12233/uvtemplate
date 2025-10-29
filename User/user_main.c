@@ -4,6 +4,7 @@
 #include "blink_task.h"
 #include "portable.h"
 #include "projdefs.h"
+#include "tcp_echo_task.h"
 #include "user_init/initors.h"
 #include "wiz/wiz_test.h"
 #include "wiz/wizspi_init.h"
@@ -36,13 +37,7 @@ int user_main() {
 
   user_init();
 
-  pvPortMalloc(1); // makes systick_handler not available under non task cxt
-
-  //
-  // create task
-  BaseType_t res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE,
-                               NULL, configMAX_PRIORITIES - 2, NULL);
-  assert(res == pdPASS);
+  // portMalloc() makes systick_handler not available under non task cxt
 
   //
   // freertos mainloop

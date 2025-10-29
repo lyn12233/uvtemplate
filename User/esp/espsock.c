@@ -30,17 +30,22 @@ static int is_sock_conn(int id) {
 }
 
 int sock_init() {
+  debug("sock_init: enter\r\n");
   if (esk_init_done)
     return LSTN_SK_FD;
 
+  debug("sock_init: starting\r\n");
   esk_lstn_res = xQueueCreate(20, sizeof(int));
   assert(esk_lstn_res);
+  debug("sock_init: lstn res queue created\r\n");
+
   for (int i = 0; i < NB_SOCK; i++) {
     esk_conn_res[i] = xQueueCreate(20, sizeof(int));
     assert(esk_conn_res[i]);
     esk_recv_buff[i] = vstr_create(512);
     assert(esk_recv_buff[i]);
   }
+  debug("sock_init: conn res queues and recv buffs created\r\n");
 
   // TODO: AT, RST, CWMODE, CWJAP, CIPMUX (mode, jap are stored, mux not)
   // TODO: wifi loging in pppoe (not supported)
@@ -51,6 +56,7 @@ int sock_init() {
 
   for (int i = 0; i < sizeof(init_cmds) / sizeof(atc_cmd_type_t); i++) {
     cmd.type = init_cmds[i];
+    debug("sock_init: init command: %d\r\n", (int)init_cmds[i]);
     atc_exec(&cmd);
     res = xQueueReceive(esk_lstn_res, &res, portMAX_DELAY);
     if (res < 0)

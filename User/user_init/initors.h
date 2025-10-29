@@ -20,7 +20,7 @@ extern USART_HandleTypeDef m_uh;
 void usart1_init();
 extern USART_HandleTypeDef m_u3h;
 extern QueueHandle_t m_esp8266_qin;
-extern uint8_t m_esp8266_recvbyte;
+extern volatile uint8_t m_esp8266_recvbyte;
 extern SemaphoreHandle_t m_esp8266_senddone;
 // extern uint8_t m_esp8266_recvbuff[256];
 

@@ -2,6 +2,7 @@
 
 #include "parser.h" // for ATC_SENDRES_TIMEOUT
 #include "projdefs.h"
+#include "stm32f1xx_hal_def.h"
 #include "types/vo.h"
 
 #include <stdint.h>
@@ -13,14 +14,23 @@
 
 #include "log.h"
 #include "port_errno.h"
+#include "user_init/initors.h"
 
 void atc_send(const void *buff, uint32_t bufflen) {
-  if (bufflen > 100) {
-    HAL_USART_Transmit_IT(&m_u3h, buff, bufflen);
-    xSemaphoreTake(m_esp8266_senddone, portMAX_DELAY);
-  } else {
-    HAL_USART_Transmit(&m_u3h, buff, bufflen, -1);
+  HAL_StatusTypeDef res;
+  debug("atc_send: sending %lu bytes\r\n", bufflen);
+
+  res = HAL_USART_Transmit(&m_u3h, buff, bufflen, 50);
+  debug("atc_send: HAL_USART_Transmit done\r\n");
+
+  if (res != HAL_OK) {
+    printf("atc_send: HAL_USART_Transmit error %d\r\n", res);
+    // assert(res == HAL_OK);
   }
+  if (atc_parser_init_done)
+    xSemaphoreTake(m_esp8266_senddone, pdMS_TO_TICKS(50));
+
+  debug("atc_send: sent\r\n");
 }
 
 static uint16_t str_valid_len(const vstr_t *str) {
@@ -36,13 +46,19 @@ static uint16_t str_valid_len(const vstr_t *str) {
 
 static atc_msg_type_t get_sendres() {
   atc_msg_type_t res;
-  BaseType_t pass = xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
+  BaseType_t pass = pdTRUE;
+  if (atc_sendres)
+    pass = xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
   return pass == pdTRUE ? res : atc_unknown;
 }
 
 void atc_exec(const atc_cmd_t *cmd) {
-  // wait until state is clear
-  xSemaphoreTake(atc_cansend, portMAX_DELAY);
+  if (!atc_parser_init_done) {
+    debug("atc_exec: parser not initialized\r\n");
+    return;
+  } else {
+    debug("atc_exec: parser initialized\r\n");
+  }
 
   uint16_t len_ssid, len_pwd;
   const vstr_t *s_ssid, *s_pwd;
@@ -52,12 +68,15 @@ void atc_exec(const atc_cmd_t *cmd) {
 
   switch (cmd->type) {
   case atc_start:
+    debug("exec: atc_start\r\n");
     atc_send("AT\r\n", 4);
     break;
   case atc_reset:
+    debug("exec: atc_reset\r\n");
     atc_send("AT+RST\r\n", 8);
     break;
   case atc_cwmode:
+    debug("exec: atc_cwmode\r\n");
     atc_send("AT+CWMODE=2\r\n", 13);
     break;
   case atc_cwjap:
@@ -70,9 +89,11 @@ void atc_exec(const atc_cmd_t *cmd) {
     atc_send("\r\n", 2);
     break;
   case atc_cipmux:
+    debug("exec: atc_cipmux\r\n");
     atc_send("AT+CIPMUX=1\r\n", 13);
     break;
   case atc_cipserver:
+    debug("exec: atc_cipserver\r\n");
     atc_send("AT+CIPSERVER=1,8080\r\n", 21);
     break;
 
@@ -92,7 +113,7 @@ void atc_exec(const atc_cmd_t *cmd) {
 
       // wait wonna state conditionally, force send upon failure
       xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
-      if (res == atc_ok) {
+      if (res == atc_ok && atc_wonna) {
         xSemaphoreTake(atc_wonna, portMAX_DELAY);
       }
       atc_send(&cmd->buff[offs], cur_len);
@@ -120,6 +141,7 @@ void atc_exec(const atc_cmd_t *cmd) {
   } else if (res == atc_ok) {
     xQueueReceive(atc_sendres, &res2, ATC_SENDRES_TIMEOUT);
   }
+  debug("exec: cmd result: %d\r\n", res);
 
   // report queue exists, report error; also reset(?)
   int out_msg = 0;
@@ -138,6 +160,7 @@ void atc_exec(const atc_cmd_t *cmd) {
 
   // clear send result queue
   xQueueReset(atc_sendres);
+  debug("exec: cmd exec done\r\n");
 }
 
 QueueHandle_t atc_cmd_in;
@@ -154,10 +177,15 @@ void atc_exec_init() {
   atc_exec_init_done = 1;
 }
 void atc_exec_loop() {
+  debug("atc_exec_loop: enter\r\n");
   while (1) {
-    if (!atc_cmd_in)
+    if (!atc_cmd_in) {
+      debug("atc_exec_loop: waiting for atc_cmd_in\r\n");
+      vTaskDelay(pdMS_TO_TICKS(1000));
       continue;
+    }
     atc_cmd_t cmd;
+    debug("exec: waiting for cmd\r\n");
     BaseType_t pass = xQueueReceive(atc_cmd_in, &cmd, portMAX_DELAY);
     if (pass == pdTRUE) {
       atc_exec(&cmd);

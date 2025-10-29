@@ -31,11 +31,11 @@ void user_init() {
   HAL_Init();
   SystemClock_Config();
   LED_init();
-  usart1_init();
+  uart1_init();
   // -- logging enabled --
   puts("==========logging-enaled==========");
-  usart3_init();
-  puts("usart3 init done");
+  uart3_init();
+  puts("uart3 init done");
   // sdio_init();
   // puts("sdio init done");
 
@@ -61,9 +61,9 @@ void user_init() {
   // create task
   BaseType_t res;
 
-  // res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE, NULL,
-  //                   configMAX_PRIORITIES - 2, NULL);
-  // assert(res == pdPASS);
+  res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE, NULL,
+                    configMAX_PRIORITIES - 2, NULL);
+  assert(res == pdPASS);
   // res = xTaskCreate(tcp_echo_task, "tcpEchoTask", 512, NULL,
   //                   configMAX_PRIORITIES - 2, NULL);
   // assert(res == pdPASS);

@@ -10,7 +10,7 @@
 #include "portmacro.h"
 
 #include "stm32f1xx_hal.h"
-#include "stm32f1xx_hal_usart.h"
+#include "stm32f1xx_hal_uart.h"
 
 #include "log.h"
 #include "port_errno.h"
@@ -20,11 +20,11 @@ void atc_send(const void *buff, uint32_t bufflen) {
   HAL_StatusTypeDef res;
   debug("atc_send: sending %lu bytes\r\n", bufflen);
 
-  res = HAL_USART_Transmit(&m_u3h, buff, bufflen, 50);
-  debug("atc_send: HAL_USART_Transmit done\r\n");
+  res = HAL_UART_Transmit(&m_u3h, buff, bufflen, 50);
+  debug("atc_send: HAL_UART_Transmit done\r\n");
 
   if (res != HAL_OK) {
-    printf("atc_send: HAL_USART_Transmit error %d\r\n", res);
+    printf("atc_send: HAL_UART_Transmit error %d\r\n", res);
     // assert(res == HAL_OK);
   }
   if (atc_parser_init_done)

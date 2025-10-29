@@ -12,8 +12,6 @@
 // system
 #include <stdio.h>
 
-#include "stm32_hal_legacy.h"
-#include "stm32f103xe.h"
 #include "stm32f1xx_hal.h"
 #include "stm32f1xx_hal_adc.h"
 #include "stm32f1xx_hal_def.h"
@@ -21,7 +19,7 @@
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_rcc_ex.h"
 #include "stm32f1xx_hal_tim.h"
-#include "stm32f1xx_hal_usart.h"
+#include "stm32f1xx_hal_uart.h"
 
 // 3rd party
 #include "FreeRTOS.h"
@@ -43,7 +41,7 @@ int user_main() {
   // freertos mainloop
   vTaskStartScheduler();
   while (1) {
-    HAL_USART_Transmit(&m_uh, (void *)"task all done\\n", 9, -1);
+    HAL_UART_Transmit(&m_uh, (void *)"task all done\\n", 9, -1);
     HAL_Delay(1000);
   }
 }

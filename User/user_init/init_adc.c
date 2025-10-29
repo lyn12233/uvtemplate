@@ -9,7 +9,7 @@
 #include "stm32f1xx_hal_rcc.h"
 #include "stm32f1xx_hal_rcc_ex.h"
 #include "stm32f1xx_hal_tim.h"
-#include "stm32f1xx_hal_usart.h"
+#include "stm32f1xx_hal_uart.h"
 
 ADC_HandleTypeDef m_adch;
 

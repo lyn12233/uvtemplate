@@ -20,7 +20,7 @@ buff20_t lftoa(double val, char width, char precision, char fill);
 
 // overriding part
 
-#include "stm32f1xx_hal_usart.h"
+#include "stm32f1xx_hal_uart.h"
 #include "user_init/initors.h"
 
 #include <stdio.h>

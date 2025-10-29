@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-extern USART_HandleTypeDef m_u3h;
+extern UART_HandleTypeDef m_u3h;
 
 extern SemaphoreHandle_t atc_cansend;
 extern SemaphoreHandle_t atc_wonna; // impl in parser

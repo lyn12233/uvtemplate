@@ -391,11 +391,11 @@ void atc_dispatch(atc_msg_t *msg) {
   }
 }
 
-extern QueueHandle_t m_esp8266_qin; // in usart init
+extern QueueHandle_t m_esp8266_qin; // in uart init
 
 void atc_parser_loop() {
   puts("atc_parser_loop: enter\r\n");
-  HAL_USART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
+  HAL_UART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
   debug("atc_parser_loop: started receiving\r\n");
 
   while (1) {

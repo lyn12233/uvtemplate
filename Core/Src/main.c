@@ -60,7 +60,7 @@ void Error_Handler(void) {
   // #define __disable_irq(...) ((int)(0 && ""))
   __disable_irq();
   while (1) {
-    HAL_Delay(1000);
+    HAL_Delay(100);
     puts("HAL error\r\n");
   }
   /* USER CODE END Error_Handler_Debug */

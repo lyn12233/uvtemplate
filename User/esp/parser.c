@@ -40,6 +40,7 @@
 #define STATE_IPD_LEN 5
 #define STATE_IPD_DAT 6
 #define STATE_ERROR_CHAR 7
+#define STATE_ECHOING 8
 
 static char msg_op[OP_MAXLEN];
 static vstr_t *msg_buff = NULL; // will not used after init
@@ -132,7 +133,10 @@ uint8_t atc_parse_char(uint8_t c) {
       }
 
     } else if (isnewline(c)) {
-      if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
+      if (op_len >= 2 && strncmp(msg_op, "AT", 2) == 0) {
+        debug("atc_parser: command echo\r\n");
+        state = STATE_ECHOING;
+      } else if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
         debug("atc_parser: OK\r\n");
         msg.type = atc_ok;
         atc_dispatch(&msg);
@@ -278,9 +282,10 @@ uint8_t atc_parse_char(uint8_t c) {
   } break;
 
   // error char
+  case STATE_ECHOING:
   case STATE_ERROR_CHAR: {
     if (isnewline(c) || isspace(c)) {
-      debug("atc_parser: err state clear\r\n");
+      debug("atc_parser: echo/err state clear\r\n");
       state = STATE_CLEAR;
     }
   } break;
@@ -323,7 +328,7 @@ void atc_parser_init() {
   assert(atc_wonna);
   atc_cansend = xSemaphoreCreateBinary();
   assert(atc_cansend);
-  atc_sendres = xQueueCreate(20, sizeof(atc_msg_type_t));
+  atc_sendres = xQueueCreate(1, sizeof(atc_msg_type_t));
   assert(atc_sendres);
 
   msg_buff = vstr_create(0);
@@ -352,7 +357,7 @@ void atc_dispatch(atc_msg_t *msg) {
       printf("atc_dispatch: invalid values: id=%d, len=%d\r\n", msg->id,
              msg->len);
     }
-    // fall-through
+    break;
   case atc_unknown: // unused
   case atc_ok:
   case atc_error:
@@ -418,7 +423,11 @@ void atc_parser_loop() {
     BaseType_t pass = xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
 
     if (pass == pdTRUE) {
-      debug("atc_parser_loop: received byte: 0x%02x\r\n", recvbyte);
+      if (!isspace(recvbyte)) {
+        // debug("recv: %c\r\n", recvbyte);
+      } else {
+        // debug("atc_parser_loop: received byte: 0x%x\r\n", recvbyte);
+      }
       atc_parse_char(recvbyte);
     } else {
       debug("atc_parser_loop: xQueueReceive failed\r\n");

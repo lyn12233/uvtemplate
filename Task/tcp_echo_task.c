@@ -1,22 +1,46 @@
 #include "tcp_echo_task.h"
-
 #include "esp/espsock.h"
 #include "esp/exec.h"
+#include "esp/parser.h"
+
 
 #include <stdint.h>
 
-#include "log.h"
+#include "portmacro.h"
 #include "projdefs.h"
+
+
+#include "log.h"
 
 void tcp_echo_task(void *params) {
   atc_cmd_t cmd;
+  QueueHandle_t exec_res = xQueueCreate(10, sizeof(int));
+  assert(exec_res);
+  int res;
+  BaseType_t pass;
+  int cnt = 0;
+  atc_cmd_type_t options[4] = {atc_start, atc_cwmode, atc_cipmux,
+                               atc_cipserver};
+
   puts("tcp_echo_task: enter\r\n");
   while (1) {
-    debug("tcp_echo_task: exec 'at'\r\n");
-    cmd.type = atc_start;
-    cmd.exec_res = NULL;
+
+    debug("=======task: exec %d=======\r\n", cnt);
+
+    cnt = (cnt + 1) % 4;
+    cmd.type = options[cnt];
+    cmd.exec_res = exec_res;
     atc_exec(&cmd);
-    vTaskDelay(pdMS_TO_TICKS(3000));
+
+    vTaskDelay(pdMS_TO_TICKS(1500));
+
+    res = -1;
+    pass = xQueueReceive(exec_res, &res, portMAX_DELAY);
+    xQueueReset(exec_res);
+
+    debug("=======task: result %d (recv:%d)\r\n", res, (int)pass);
+
+    vTaskDelay(pdMS_TO_TICKS(1500));
   }
   //   int sockfd = sock_init();
   //   printf("tcp_echo_task: sock_init=%d\r\n", sockfd);

@@ -1,20 +1,22 @@
 #include "exec.h"
 
+#include "esp/parser.h"
 #include "parser.h" // for ATC_SENDRES_TIMEOUT
 #include "projdefs.h"
-#include "stm32f1xx_hal_def.h"
 #include "types/vo.h"
+#include "user_init/initors.h"
 
 #include <stdint.h>
 
 #include "portmacro.h"
 
 #include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_def.h"
 #include "stm32f1xx_hal_uart.h"
+
 
 #include "log.h"
 #include "port_errno.h"
-#include "user_init/initors.h"
 
 void atc_send(const void *buff, uint32_t bufflen) {
   HAL_StatusTypeDef res;
@@ -49,7 +51,9 @@ static atc_msg_type_t get_sendres() {
   BaseType_t pass = pdTRUE;
   if (atc_sendres)
     pass = xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
-  return pass == pdTRUE ? res : atc_unknown;
+
+  // xQueueReset(atc_sendres);
+  return pass == pdTRUE && atc_sendres ? res : atc_unknown;
 }
 
 void atc_exec(const atc_cmd_t *cmd) {
@@ -75,7 +79,7 @@ void atc_exec(const atc_cmd_t *cmd) {
     break;
   case atc_cwmode:
     debug("exec: atc_cwmode\r\n");
-    atc_send("AT+CWMODE=2\r\n", 13);
+    atc_send("AT+CWMODE=3\r\n", 13);
     break;
   case atc_cwjap:
     s_ssid = cmd->s_ssid, s_pwd = cmd->s_pwd;
@@ -112,6 +116,7 @@ void atc_exec(const atc_cmd_t *cmd) {
       // wait wonna state conditionally, force send upon failure
       res = get_sendres();
       if (res == atc_ok && atc_wonna) {
+        debug("atc_exec: waiting wonna...\r\n");
         xSemaphoreTake(atc_wonna, portMAX_DELAY);
       }
       atc_send(&cmd->buff[offs], cur_len);
@@ -146,18 +151,18 @@ void atc_exec(const atc_cmd_t *cmd) {
   if (res != atc_ok || cmd->type == atc_cipsend && res2 != atc_send_ok) {
     // error result
     if (cmd->exec_res) {
-      out_msg = ENOTCONN;
-      xQueueSend(cmd->exec_res, &out_msg, 0);
+      out_msg = atc_unknown ? ENOTCONN : atc_error ? EIO : ENOTCONN;
+      xQueueSend(cmd->exec_res, &out_msg, portMAX_DELAY);
     }
 
   } else {
     if (cmd->exec_res) {
-      xQueueSend(cmd->exec_res, &out_msg, 0);
+      xQueueSend(cmd->exec_res, &out_msg, portMAX_DELAY);
     }
   }
 
   // clear send result queue
-  xQueueReset(atc_sendres);
+  // xQueueReset(atc_sendres);
   debug("exec: cmd exec done\r\n");
 }
 

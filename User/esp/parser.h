@@ -12,7 +12,7 @@
 // number of sock entries, larger that physically supported
 #define NB_SOCK 8
 // sendres timeout
-#define ATC_SENDRES_TIMEOUT 20
+#define ATC_SENDRES_TIMEOUT pdMS_TO_TICKS(50)
 
 typedef enum {
   atc_unknown,

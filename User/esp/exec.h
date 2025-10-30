@@ -43,7 +43,7 @@ typedef struct {
       const vstr_t *s_pwd; // pass by reference
     };
   };
-  QueueHandle_t exec_res;
+  QueueHandle_t exec_res; // <int>
 } atc_cmd_t;
 
 void atc_send(const void *buff, uint32_t bufflen);

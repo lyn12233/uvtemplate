@@ -9,6 +9,9 @@
 #include "projdefs.h"
 
 #include "log.h"
+#include "stm32f1xx_hal_uart.h"
+#include "types/vo.h"
+#include "user_init/initors.h"
 
 void tcp_echo_task(void *params) {
   atc_cmd_t cmd;
@@ -32,32 +35,35 @@ void tcp_echo_task(void *params) {
   vTaskDelay(pdMS_TO_TICKS(500));
   puts("===================sock init done===================\r\n");
 
-  while (1) {
-    int acpt = sock_accept(lstnfd, 0);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    printf("socket accepted: %d\r\n", acpt);
-  }
-
-  // puts("tcp_echo_task: enter\r\n");
   // while (1) {
-
-  //   debug("=======task: exec %d=======\r\n", cnt);
-
-  //   cnt = (cnt + 1) % 4;
-  //   cmd.type = options[cnt];
-  //   cmd.exec_res = exec_res;
-  //   atc_exec(&cmd);
-
-  //   vTaskDelay(pdMS_TO_TICKS(1500));
-
-  //   res = -1;
-  //   pass = xQueueReceive(exec_res, &res, portMAX_DELAY);
-  //   xQueueReset(exec_res);
-
-  //   debug("=======task: result %d (recv:%d)\r\n", res, (int)pass);
-
-  //   vTaskDelay(pdMS_TO_TICKS(1500));
+  //   int acpt = sock_accept(lstnfd, 0);
+  //   vTaskDelay(pdMS_TO_TICKS(100));
+  //   printf("socket accepted: %d\r\n", acpt);
   // }
+  int acpt = -1;
+  while (acpt < 0) {
+    acpt = sock_accept(lstnfd, 0);
+  }
+  vTaskDelay(pdMS_TO_TICKS(100));
+  printf("socket accepted: %d\r\n", acpt);
+
+  vstr_t *buff = vstr_create(0);
+  vstr_t *tmp = vstr_create(0);
+  while (1) {
+    int res = sock_recv(acpt, buff, 1, 0);
+    if (res >= 1) {
+      vbuff_iadd(tmp, buff->data, 1);
+      // printf("recv err: %d\r\n", res);
+    }
+
+    if (buff->data[0] == '\n') {
+      buff->data[0] = 0;
+      vTaskDelay(pdMS_TO_TICKS(100));
+      HAL_UART_Transmit(&m_uh, (void *)tmp->data, tmp->len, -1);
+      tmp->len = 0;
+      puts("");
+    }
+  }
 
   //   int connfd = sock_accept(sockfd, 0);
   //   printf("tcp_echo_task: sock_accept=%d\r\n", connfd);

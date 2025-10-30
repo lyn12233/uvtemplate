@@ -31,19 +31,21 @@ typedef enum {
 // restricted by hardware, exec splits it if needed
 
 typedef struct {
-  atc_cmd_type_t type;
+  atc_cmd_type_t type; // opcode, later exec AT+<type>
   union {
     struct {
+      // parm for CIPSEND
       uint8_t id;
       uint16_t len;
-      const void *buff;
+      const uint8_t *buff; // const reference of vstr->data
     };
     struct {
-      const vstr_t *s_ssid;
-      const vstr_t *s_pwd; // pass by reference
+      // parm for CWJAP
+      const vstr_t *s_ssid; // const reference
+      const vstr_t *s_pwd;  // const reference
     };
   };
-  QueueHandle_t exec_res; // <int>
+  QueueHandle_t exec_res; // None|Queue<int>
 } atc_cmd_t;
 
 void atc_send(const void *buff, uint32_t bufflen);

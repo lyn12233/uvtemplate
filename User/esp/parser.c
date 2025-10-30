@@ -42,7 +42,7 @@
 #define STATE_ERROR_CHAR 7
 #define STATE_ECHOING 8
 
-static char msg_op[OP_MAXLEN];
+static char msg_op[OP_MAXLEN + 1] = {0};
 static vstr_t *msg_buff = NULL; // will not used after init
 static uint16_t op_len;
 static uint16_t conn_id;
@@ -66,6 +66,12 @@ static inline uint8_t isspace(uint8_t c) { //
 
 uint8_t state_clear_local = 0;
 
+static void dispatch_err_msg() {
+  msg_op[op_len > OP_MAXLEN ? OP_MAXLEN : op_len] = 0;
+  msg.type = atc_parse_error, msg.msg = msg_op;
+  atc_dispatch(&msg);
+}
+
 void atc_parser_clear() {
   //
   op_len = 0;
@@ -74,6 +80,7 @@ void atc_parser_clear() {
   buff_offs = 0;
   state = STATE_CLEAR;
   msg_op[0] = 0;
+  msg_op[OP_MAXLEN] = 0;
   state_clear_local = 0;
 }
 
@@ -115,18 +122,17 @@ uint8_t atc_parse_char(uint8_t c) {
         vstr_clear(msg_buff);
         state = STATE_IPD_ID;
       } else {
-        msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
-        msg.type = atc_parse_error, msg.msg = msg_op;
-        atc_dispatch(&msg);
+        // not a recognized opcode in format \S*,
+        dispatch_err_msg();
         state = STATE_ERROR_CHAR;
       }
     } else if (isalpha(c) || isspace(c)) {
 
       if (op_len >= OP_MAXLEN) {
-        msg_op[OP_MAXLEN - 1] = 0;
-        msg.type = atc_parse_error, msg.msg = msg_op;
-        atc_dispatch(&msg);
+        // opcode too long
+        dispatch_err_msg();
         state = STATE_ERROR_CHAR;
+
       } else {
         msg_op[op_len] = c;
         op_len++;
@@ -170,15 +176,13 @@ uint8_t atc_parse_char(uint8_t c) {
         msg.type = atc_wifi_got_ip;
         atc_dispatch(&msg);
       } else {
-        msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
-        msg.type = atc_parse_error, msg.msg = msg_op;
-        atc_dispatch(&msg);
+        // end of a error msg, state clear
+        dispatch_err_msg();
       }
       state = STATE_CLEAR;
     } else {
-      msg_op[op_len >= OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
-      msg.type = atc_parse_error, msg.msg = msg_op;
-      atc_dispatch(&msg);
+      // invalid character in or after opcode
+      dispatch_err_msg();
       state = STATE_ERROR_CHAR;
     }
   } break;
@@ -191,7 +195,7 @@ uint8_t atc_parse_char(uint8_t c) {
     if (isdigit(c)) {
       // c is part of number
 
-      // sufficient (65535 > 2048)
+      // sufficient (65535 > 2048), do not consider overflow
       if (state == STATE_IPD_LEN)
         buff_len = buff_len * 10 + c - '0';
       else
@@ -243,17 +247,13 @@ uint8_t atc_parse_char(uint8_t c) {
         state = STATE_CLEAR;
       } else if (op_len >= 9) {
         // op too long unmatched
-        msg_op[op_len] = 0;
-        msg.type = atc_parse_error, msg.msg = msg_op;
-        atc_dispatch(&msg);
+        dispatch_err_msg();
         state = STATE_ERROR_CHAR;
       } else {
       }
     } else {
-      // error char in op
-      msg_op[op_len == OP_MAXLEN ? OP_MAXLEN - 1 : op_len] = 0;
-      msg.type = atc_parse_error, msg.msg = msg_op;
-      atc_dispatch(&msg);
+      // error char in x,CONNECT op
+      dispatch_err_msg();
       state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
     }
   } break;
@@ -322,7 +322,7 @@ void atc_parser_init() {
     conn_recv[i] = xQueueCreate(20, sizeof(atc_msg_t));
     assert(conn_recv[i]);
   }
-  conn_preaccepted = xQueueCreate(20, 1);
+  conn_preaccepted = xQueueCreate(20, sizeof(uint8_t));
   assert(conn_preaccepted);
   atc_wonna = xSemaphoreCreateBinary();
   assert(atc_wonna);
@@ -342,9 +342,9 @@ void atc_parser_init() {
   atc_parser_init_done = 1;
 }
 
-// dispatch
+// dispatch. calling this needs to ensure msg not truncated in parallel
 
-void atc_dispatch(atc_msg_t *msg) {
+void atc_dispatch(const atc_msg_t *msg) {
   switch (msg->type) {
 
   // messages send to sendres

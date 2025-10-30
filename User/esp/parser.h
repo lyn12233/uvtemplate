@@ -43,10 +43,12 @@ typedef struct {
   atc_msg_type_t type;
   union {
     struct {
+      // parm for +IPD(data receive) or x,CONNECT|CLOSED
       uint8_t id;
       uint16_t len;
       vstr_t *pdata;
     };
+    // parm for error message, null terminated
     const char *msg;
   };
 } atc_msg_t;
@@ -55,7 +57,7 @@ typedef struct {
 
 void atc_parser_clear();
 uint8_t atc_parse_char(uint8_t c);
-void atc_dispatch(atc_msg_t *msg);
+void atc_dispatch(const atc_msg_t *msg);
 
 // rtos-level api's leading to socket api
 void atc_parser_loop();

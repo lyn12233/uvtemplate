@@ -2,6 +2,8 @@
 
 #include "exec.h"
 #include "parser.h"
+#include "portmacro.h"
+#include "projdefs.h"
 #include "types/vo.h"
 
 #include <stdint.h>
@@ -105,7 +107,7 @@ int sock_send(int sockfd, const vstr_t *buff, uint16_t size, int flags) {
   cmd.type = atc_cipsend;
   cmd.id = (uint8_t)sockfd;
   cmd.len = (uint16_t)size;
-  cmd.buff = buff->data;
+  cmd.buff = (uint8_t *)buff->data;
   cmd.exec_res = esk_conn_res[sockfd];
   atc_exec(&cmd);
 
@@ -122,36 +124,59 @@ int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags) {
     return EBADF;
   if (!is_sock_conn(sockfd))
     return ENOTCONN;
-  if (size > buff->len)
-    size = buff->len;
+  // if (size > buff->len)
+  //   size = buff->len;
   if (flags)
     return EINVAL;
   if (size == 0)
     return 0;
 
+  debug("sock_recv: start\r\n");
+  // trivial clear, no calls to free(&buff->data)
   buff->len = 0;
 
   while (1) {
+    // size: remaining required size to be put into buff
+    // esk_recv_buff: (vstr*)[8], pre-received data popped from queue
+
     uint32_t recv_len = esk_recv_buff[sockfd]->len;
+    debug("sock_recv: checking pre-recv: remaining-req:%d - pre:%d\r\n", size,
+          recv_len);
+
     if (size <= recv_len) {
+      // recv enough, head to buff, tail remain
       vstr_t *tmp = vstr_create(0);
       vbuff_iadd(tmp, &esk_recv_buff[sockfd]->data[size], recv_len - size);
       vbuff_iadd(buff, esk_recv_buff[sockfd]->data, size);
 
       vstr_delete(esk_recv_buff[sockfd]);
       esk_recv_buff[sockfd] = tmp;
+
+      debug("sock_recv: done. buff:%d, pre:%d\r\n", buff->len,
+            esk_recv_buff[sockfd]->len);
       break;
+
     } else {
+      // recv not enough, buff <- pre-recv <- queue
       vbuff_iadd(buff, esk_recv_buff[sockfd]->data, recv_len);
       size -= recv_len;
+      debug("sock_recv: buff:%d still need %d (-%d)\r\n", buff->len, size,
+            recv_len);
 
       atc_msg_t msg;
-      xQueueReceive(conn_recv[sockfd], &msg, portMAX_DELAY);
+      BaseType_t pass;
+      pass = xQueueReceive(conn_recv[sockfd], &msg, portMAX_DELAY);
+      if (pass == pdFALSE)
+        return EAGAIN;
       assert(msg.type == atc_conn_recv);
 
+      // truncate pre-recv buff
       vstr_t *tmp = msg.pdata;
+      esk_recv_buff[sockfd]->len = 0;
       vbuff_iadd(esk_recv_buff[sockfd], tmp->data, tmp->len);
       vstr_delete(tmp);
+      debug("sock_recv: connection queue popped %d\r\n",
+            esk_recv_buff[sockfd]->len);
 
       // undone
     }

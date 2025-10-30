@@ -60,23 +60,13 @@ void tcp_echo_task(void *params) {
       buff->data[0] = 0;
       vTaskDelay(pdMS_TO_TICKS(100));
       HAL_UART_Transmit(&m_uh, (void *)tmp->data, tmp->len, -1);
-      tmp->len = 0;
       puts("");
+
+      puts("echoing");
+      sock_send(acpt, tmp, tmp->len, 0);
+
+      // cleanup
+      tmp->len = 0;
     }
   }
-
-  //   int connfd = sock_accept(sockfd, 0);
-  //   printf("tcp_echo_task: sock_accept=%d\r\n", connfd);
-  //   assert(connfd >= 0);
-
-  //   uint8_t recvbyte;
-  //   while (1) {
-  //     int rcvd = sock_recv(connfd, (vstr_t *)&recvbyte, 1, 0);
-  //     if (rcvd > 0) {
-  //       sock_send(connfd, (const vstr_t *)&recvbyte, 1, 0);
-  //     } else {
-  //       printf("recv error %d\r\n", rcvd);
-  //       vTaskDelay(pdMS_TO_TICKS(1000));
-  //     }
-  //   }
 }

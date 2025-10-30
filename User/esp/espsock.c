@@ -109,10 +109,14 @@ int sock_send(int sockfd, const vstr_t *buff, uint16_t size, int flags) {
   cmd.len = (uint16_t)size;
   cmd.buff = (uint8_t *)buff->data;
   cmd.exec_res = esk_conn_res[sockfd];
+  debug("sock_send: sending %d bytes, p:%x\r\n", size,
+        (int)(uint64_t)((void *)buff->data));
   atc_exec(&cmd);
+  debug("sock_send: exec done\r\n");
 
   BaseType_t pass =
       xQueueReceive(esk_conn_res[sockfd], &senderr, flags ? 0 : portMAX_DELAY);
+  debug("sock_send: recv res done\r\n");
   if (pass != pdTRUE) {
     return flags ? EAGAIN : ENOTCONN;
   }

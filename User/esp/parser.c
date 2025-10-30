@@ -306,7 +306,7 @@ uint8_t atc_parse_char(uint8_t c) {
 
 volatile uint8_t atc_parser_init_done = 0;
 volatile uint8_t conn_state[NB_SOCK]; // 0 for close, 1 for open
-QueueHandle_t conn_preaccepted;
+QueueHandle_t conn_preaccepted;       // <u8>
 QueueHandle_t conn_recv[NB_SOCK] = {0};
 SemaphoreHandle_t atc_wonna = NULL;
 SemaphoreHandle_t atc_cansend = NULL;

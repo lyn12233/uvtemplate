@@ -15,8 +15,10 @@ QueueHandle_t esk_conn_res[NB_SOCK];
 vstr_t *esk_recv_buff[NB_SOCK];
 
 static atc_cmd_type_t init_cmds[] = {
-    atc_start,  //
-    atc_cipmux, //
+    atc_start,     //
+    atc_cwmode,    //
+    atc_cipmux,    //
+    atc_cipserver, //
 };
 
 static int is_sock_conn(int id) {
@@ -35,12 +37,12 @@ int sock_init() {
     return LSTN_SK_FD;
 
   debug("sock_init: starting\r\n");
-  esk_lstn_res = xQueueCreate(20, sizeof(int));
+  esk_lstn_res = xQueueCreate(1, sizeof(int));
   assert(esk_lstn_res);
   debug("sock_init: lstn res queue created\r\n");
 
   for (int i = 0; i < NB_SOCK; i++) {
-    esk_conn_res[i] = xQueueCreate(20, sizeof(int));
+    esk_conn_res[i] = xQueueCreate(1, sizeof(int));
     assert(esk_conn_res[i]);
     esk_recv_buff[i] = vstr_create(512);
     assert(esk_recv_buff[i]);
@@ -58,7 +60,7 @@ int sock_init() {
     cmd.type = init_cmds[i];
     debug("sock_init: init command: %d\r\n", (int)init_cmds[i]);
     atc_exec(&cmd);
-    res = xQueueReceive(esk_lstn_res, &res, portMAX_DELAY);
+    xQueueReceive(esk_lstn_res, &res, portMAX_DELAY);
     if (res < 0)
       return res;
   }
@@ -71,16 +73,6 @@ int sock_listen(int sockfd) {
   if (sockfd != LSTN_SK_FD)
     return EBADF;
 
-  atc_cmd_t cmd;
-  int res;
-
-  cmd.type = atc_cipserver;
-  cmd.exec_res = esk_lstn_res;
-  atc_exec(&cmd);
-  res = xQueueReceive(esk_lstn_res, &res, portMAX_DELAY);
-  if (res < 0)
-    return res;
-
   return 0;
 }
 
@@ -88,9 +80,9 @@ int sock_accept(int sockfd, int flags) {
   if (sockfd != LSTN_SK_FD)
     return EBADF;
 
-  int conn_fd;
+  int conn_fd = 0;
   BaseType_t pass =
-      xQueueReceive(esk_lstn_res, &conn_fd, flags ? 0 : portMAX_DELAY);
+      xQueueReceive(conn_preaccepted, &conn_fd, flags ? 0 : portMAX_DELAY);
   if (pass != pdTRUE) {
     return flags ? EAGAIN : ENOTCONN;
   }

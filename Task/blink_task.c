@@ -14,7 +14,7 @@ void BlinkTask(void *p) {
   while (1) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
-    cnt = (cnt + 1) % 30;
+    cnt = (cnt + 1) % 60;
     if (!cnt)
       printf("free size: %d\r\n", (int)xPortGetFreeHeapSize());
 

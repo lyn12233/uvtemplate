@@ -20,12 +20,12 @@ void atc_send(const void *buff, uint32_t bufflen) {
   HAL_StatusTypeDef res;
   debug("atc_send: sending %lu bytes\r\n", bufflen);
 
-  res = HAL_UART_Transmit(&m_u3h, buff, bufflen, 50);
-  debug("atc_send: HAL_UART_Transmit done\r\n");
+  res = HAL_UART_Transmit_IT(&m_u3h, buff, bufflen);
 
   if (res != HAL_OK) {
     printf("atc_send: HAL_UART_Transmit error %d\r\n", res);
     // assert(res == HAL_OK);
+    return;
   }
   if (atc_parser_init_done)
     xSemaphoreTake(m_esp8266_senddone, pdMS_TO_TICKS(50));
@@ -56,8 +56,6 @@ void atc_exec(const atc_cmd_t *cmd) {
   if (!atc_parser_init_done) {
     debug("atc_exec: parser not initialized\r\n");
     return;
-  } else {
-    debug("atc_exec: parser initialized\r\n");
   }
 
   uint16_t len_ssid, len_pwd;
@@ -112,7 +110,7 @@ void atc_exec(const atc_cmd_t *cmd) {
       atc_send("\r\n", 2);
 
       // wait wonna state conditionally, force send upon failure
-      xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
+      res = get_sendres();
       if (res == atc_ok && atc_wonna) {
         xSemaphoreTake(atc_wonna, portMAX_DELAY);
       }
@@ -137,9 +135,9 @@ void atc_exec(const atc_cmd_t *cmd) {
   } // switch
 
   if (cmd->type != atc_cipsend) {
-    xQueueReceive(atc_sendres, &res, ATC_SENDRES_TIMEOUT);
+    res = get_sendres();
   } else if (res == atc_ok) {
-    xQueueReceive(atc_sendres, &res2, ATC_SENDRES_TIMEOUT);
+    res2 = get_sendres();
   }
   debug("exec: cmd result: %d\r\n", res);
 

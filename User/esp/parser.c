@@ -206,8 +206,9 @@ uint8_t atc_parse_char(uint8_t c) {
     } else if (state == STATE_IPD_LEN && c == ':' ||
                state != STATE_IPD_LEN && c == ',') {
       // end of the number
+      debug("atc_parser: ipd/conn_id next step\r\n");
       if (state == STATE_IPD_LEN && buff_len == 0) {
-        // zero len silent
+        // zero len: silent
         state = STATE_CLEAR;
       } else {
         state = state == STATE_IPD_LEN  ? STATE_IPD_DAT
@@ -262,9 +263,14 @@ uint8_t atc_parse_char(uint8_t c) {
 
     if (buff_offs == buff_len) {
       // end of +IPD: create new buff to construct msg
+      debug("atc_parser: end of ipd with len=%d\r\n", buff_len);
+
       vstr_t *tmp = msg_buff;
       msg_buff = vstr_create(0);
+
       msg.type = atc_conn_recv, msg.pdata = tmp;
+      msg.id = conn_id, msg.len = buff_len;
+
       atc_dispatch(&msg);
       state = STATE_CLEAR;
     }
@@ -274,6 +280,7 @@ uint8_t atc_parse_char(uint8_t c) {
   // error char
   case STATE_ERROR_CHAR: {
     if (isnewline(c) || isspace(c)) {
+      debug("atc_parser: err state clear\r\n");
       state = STATE_CLEAR;
     }
   } break;
@@ -381,8 +388,9 @@ void atc_dispatch(atc_msg_t *msg) {
   } break;
 
   case atc_conn_recv: {
-    if (!conn_state[msg->id])
-      break;
+    debug("atc_dispatch: received id=%d,len=%d\r\n", msg->id, msg->len);
+    // if (!conn_state[msg->id])
+    //   break;
     xQueueSend(conn_recv[msg->id], msg, portMAX_DELAY);
   } break;
 
@@ -394,14 +402,14 @@ void atc_dispatch(atc_msg_t *msg) {
 extern QueueHandle_t m_esp8266_qin; // in uart init
 
 void atc_parser_loop() {
-  puts("atc_parser_loop: enter\r\n");
+  puts("atc_parser_loop: enter");
   HAL_UART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
   debug("atc_parser_loop: started receiving\r\n");
 
   while (1) {
     uint8_t recvbyte;
     if (!m_esp8266_qin) {
-      puts("atc_parser_loop: waiting for m_esp8266_qin\r\n");
+      puts("atc_parser_loop: waiting for m_esp8266_qin init");
       vTaskDelay(pdMS_TO_TICKS(1000));
       continue;
     }

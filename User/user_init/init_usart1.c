@@ -107,7 +107,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART1) {
     // puts("here");
 
-    if (u1recv_sem) {
+    if (u1recv_sem && m_esp8266_qin) {
       BaseType_t shouldyield = pdFALSE;
       xSemaphoreGiveFromISR(u1recv_sem, &shouldyield);
       xQueueSendFromISR(m_esp8266_qin, &u1recv_byte, &shouldyield);
@@ -115,12 +115,21 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
     }
 
     HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
+  } else if (huart->Instance == USART3) {
+
+    if (m_esp8266_qin) {
+      BaseType_t shouldyield = pdFALSE;
+      xQueueSendFromISR(m_esp8266_qin, &m_esp8266_recvbyte, &shouldyield);
+      portYIELD_FROM_ISR(shouldyield);
+    }
+
+    HAL_UART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
   }
 }
 
 // error callback
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-  if (huart->Instance == USART1) {
+  if (huart->Instance == USART1 || huart->Instance == USART3) {
 
     // clear error
     volatile uint32_t tmp;
@@ -128,7 +137,11 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
     tmp = huart->Instance->DR;
     (void)tmp;
 
-    HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
+    if (huart->Instance == USART1) {
+      HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
+    } else {
+      HAL_UART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
+    }
   }
 }
 
@@ -151,7 +164,7 @@ static void u1recv_process(void *p) {
 UART_HandleTypeDef m_u3h;
 ///@brief esp8266-uart recv queue(ringbuff) instance, 256*1
 QueueHandle_t m_esp8266_qin = NULL;
-volatile uint8_t m_esp8266_recvbyte;
+uint8_t m_esp8266_recvbyte;
 SemaphoreHandle_t m_esp8266_senddone = NULL;
 
 ///@brief uart3-esp8266-s wifi port init, consists of peripheral config + queue
@@ -204,7 +217,10 @@ void uart3_init() {
   }
 
   // start interrupt recv
-  // HAL_UART_Receive_IT(&m_u3h, (void *)&m_esp8266_recvbyte, 1);
+  puts("starting uart3 recv");
+  HAL_StatusTypeDef res;
+  res = HAL_UART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
+  assert(res == HAL_OK);
 }
 
 ///@brief uart3 interrupt handler in NVIC table

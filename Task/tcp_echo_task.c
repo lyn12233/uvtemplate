@@ -12,7 +12,7 @@ void tcp_echo_task(void *params) {
   atc_cmd_t cmd;
   puts("tcp_echo_task: enter\r\n");
   while (1) {
-    debug("tcp_echo_task: exec at\r\n");
+    debug("tcp_echo_task: exec 'at'\r\n");
     cmd.type = atc_start;
     cmd.exec_res = NULL;
     atc_exec(&cmd);

@@ -26,7 +26,7 @@ void uart1_init();
 
 extern UART_HandleTypeDef m_u3h;
 extern QueueHandle_t m_esp8266_qin;
-extern volatile uint8_t m_esp8266_recvbyte;
+extern uint8_t m_esp8266_recvbyte;
 extern SemaphoreHandle_t m_esp8266_senddone;
 // extern uint8_t m_esp8266_recvbuff[256];
 

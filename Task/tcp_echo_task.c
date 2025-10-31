@@ -27,7 +27,9 @@ void tcp_echo_task(void *params) {
   while (1) {
     lstnfd = sock_init();
     if (lstnfd < 0) {
-      printf("sockinit failed with %d\r\n");
+      printf("sockinit failed with %d, retry\r\n", lstnfd);
+      vTaskDelay(pdMS_TO_TICKS(200));
+      puts("retrying...");
     } else {
       break;
     }

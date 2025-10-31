@@ -14,13 +14,12 @@
 #include "stm32f1xx_hal_def.h"
 #include "stm32f1xx_hal_uart.h"
 
-
 #include "log.h"
 #include "port_errno.h"
 
 void atc_send(const void *buff, uint32_t bufflen) {
   HAL_StatusTypeDef res;
-  debug("atc_send: sending %lu bytes\r\n", bufflen);
+  debug2("atc_send: sending %lu bytes\r\n", bufflen);
 
   res = HAL_UART_Transmit_IT(&m_u3h, buff, bufflen);
 
@@ -29,12 +28,17 @@ void atc_send(const void *buff, uint32_t bufflen) {
     // assert(res == HAL_OK);
     return;
   }
-  if (atc_parser_init_done)
-    xSemaphoreTake(m_esp8266_senddone, pdMS_TO_TICKS(50));
+  if (atc_parser_init_done) {
+    BaseType_t pass;
+    pass = xSemaphoreTake(m_esp8266_senddone, pdMS_TO_TICKS(1000));
+    if (pass == pdFALSE)
+      printf("can't wait send done\r\n");
+  }
 
-  debug("atc_send: sent\r\n");
+  debug2("atc_send: sent\r\n");
 }
 
+// valid length for ssid and password(?)
 static uint16_t str_valid_len(const vstr_t *str) {
   uint16_t res;
   for (res = 0; res < str->len; res++) {
@@ -62,6 +66,8 @@ void atc_exec(const atc_cmd_t *cmd) {
     return;
   }
 
+  atc_consume_cmd_ready();
+
   uint16_t len_ssid, len_pwd;
   const vstr_t *s_ssid, *s_pwd;
   buff20_t ibuff;
@@ -72,6 +78,9 @@ void atc_exec(const atc_cmd_t *cmd) {
   case atc_start:
     debug("exec: atc_start\r\n");
     atc_send("AT\r\n", 4);
+    break;
+  case atc_echo_off:
+    atc_send("ATE0\r\n", 6);
     break;
   case atc_reset:
     debug("exec: atc_reset\r\n");
@@ -117,7 +126,8 @@ void atc_exec(const atc_cmd_t *cmd) {
       res = get_sendres();
       if (res == atc_ok && atc_wonna) {
         debug("atc_exec: waiting wonna...\r\n");
-        xSemaphoreTake(atc_wonna, portMAX_DELAY);
+        // xSemaphoreTake(atc_wonna, portMAX_DELAY);
+        atc_consume_transfer_ready();
       }
       atc_send(&cmd->buff[offs], cur_len);
 
@@ -194,4 +204,27 @@ void atc_exec_loop() {
       atc_exec(&cmd);
     }
   }
+}
+
+void atc_consume_transfer_ready() {
+  for (int i = 1; i < 2000; i *= 4) {
+    if (i != 1)
+      vTaskDelay(pdMS_TO_TICKS(i));
+    if (atc_peri_state == 2) {
+      atc_peri_state = 0;
+      return;
+    }
+  }
+  puts("exec: can wait wonna signal timeout");
+}
+void atc_consume_cmd_ready() {
+  for (int i = 1; i < 2000; i *= 4) {
+    if (i != 1)
+      vTaskDelay(pdMS_TO_TICKS(i));
+    if (atc_peri_state == 1) {
+      atc_peri_state = 0;
+      return;
+    }
+  }
+  puts("exec: can wait cansend signal timeout");
 }

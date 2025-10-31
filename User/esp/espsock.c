@@ -12,12 +12,13 @@
 #include "port_errno.h"
 
 volatile uint8_t esk_init_done = 0;
-QueueHandle_t esk_lstn_res;
-QueueHandle_t esk_conn_res[NB_SOCK];
-vstr_t *esk_recv_buff[NB_SOCK];
+QueueHandle_t esk_lstn_res = NULL;
+QueueHandle_t esk_conn_res[NB_SOCK] = {0};
+vstr_t *esk_recv_buff[NB_SOCK] = {0};
 
 static atc_cmd_type_t init_cmds[] = {
     atc_start,     //
+    atc_echo_off,  //
     atc_cwmode,    //
     atc_cipmux,    //
     atc_cipserver, //
@@ -39,14 +40,18 @@ int sock_init() {
     return LSTN_SK_FD;
 
   debug("sock_init: starting\r\n");
-  esk_lstn_res = xQueueCreate(1, sizeof(int));
+  if (!esk_lstn_res)
+    esk_lstn_res = xQueueCreate(1, sizeof(int));
   assert(esk_lstn_res);
   debug("sock_init: lstn res queue created\r\n");
 
   for (int i = 0; i < NB_SOCK; i++) {
-    esk_conn_res[i] = xQueueCreate(1, sizeof(int));
+    if (!esk_conn_res[i])
+      esk_conn_res[i] = xQueueCreate(1, sizeof(int));
     assert(esk_conn_res[i]);
-    esk_recv_buff[i] = vstr_create(512);
+
+    if (!esk_recv_buff[i])
+      esk_recv_buff[i] = vstr_create(1);
     assert(esk_recv_buff[i]);
   }
   debug("sock_init: conn res queues and recv buffs created\r\n");

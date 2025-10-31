@@ -51,6 +51,8 @@ static uint16_t buff_offs;
 static uint8_t state;
 static atc_msg_t msg;
 
+volatile uint8_t atc_peri_state;
+
 static inline uint8_t isalpha(uint8_t c) { //
   return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
 }
@@ -96,6 +98,7 @@ uint8_t atc_parse_char(uint8_t c) {
     } else if (c == '>') {
       // data transfer ready
       xSemaphoreGive(atc_wonna);
+      atc_peri_state = 2;
 
     } else if (isdigit(c)) {
       // x,CONNECTED/CLOSED
@@ -139,8 +142,9 @@ uint8_t atc_parse_char(uint8_t c) {
       }
 
     } else if (isnewline(c)) {
-      if (op_len >= 2 && strncmp(msg_op, "AT", 2) == 0) {
-        debug("atc_parser: command echo\r\n");
+      if (op_len >= 2 && strncmp(msg_op, "AT", 2) == 0 ||
+          op_len >= 4 && strncmp(msg_op, "Recv", 4) == 0) {
+        debug("atc_parser: command echo/nonscense\r\n");
         state = STATE_ECHOING;
       } else if (op_len == 2 && strncmp(msg_op, "OK", op_len) == 0) {
         debug("atc_parser: OK\r\n");
@@ -161,7 +165,7 @@ uint8_t atc_parse_char(uint8_t c) {
       } else if (op_len == 5 && strncmp(msg_op, "ready", op_len) == 0) {
         msg.type = atc_ready;
         atc_dispatch(&msg);
-      } else if (op_len >= 9 && strncmp(msg_op, "busy p...", 9) == 0) {
+      } else if (op_len >= 5 && strncmp(msg_op, "busy ", 5) == 0) {
         msg.type = atc_busy;
         atc_dispatch(&msg);
       } else if ( //
@@ -207,7 +211,7 @@ uint8_t atc_parse_char(uint8_t c) {
         // nop
       } else {
         // length/id overflow
-        msg.type = atc_inval, msg.id = conn_id, msg.len = buff_len;
+        msg.type = atc_inval, msg.id = conn_id, msg.len = state;
         atc_dispatch(&msg);
         state = STATE_ERROR_CHAR;
       }
@@ -225,7 +229,7 @@ uint8_t atc_parse_char(uint8_t c) {
       }
     } else {
       // invalid val
-      msg.type = atc_inval, msg.id = conn_id, msg.len = 0;
+      msg.type = atc_inval, msg.id = conn_id, msg.len = state;
       atc_dispatch(&msg);
       state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
     }
@@ -284,7 +288,7 @@ uint8_t atc_parse_char(uint8_t c) {
   // error char
   case STATE_ECHOING:
   case STATE_ERROR_CHAR: {
-    if (isnewline(c) || isspace(c)) {
+    if (isnewline(c)) {
       debug("atc_parser: echo/err state clear\r\n");
       state = STATE_CLEAR;
     }
@@ -295,9 +299,12 @@ uint8_t atc_parse_char(uint8_t c) {
 
   } // switch
 
-  if (!state_clear_local && state == STATE_CLEAR) {
+  if (/*!state_clear_local &&*/ state == STATE_CLEAR) {
     debug("atc_parser: cansend semaphore give\r\n");
     xSemaphoreGive(atc_cansend);
+    // do not overrride wonna readiness
+    if (!atc_peri_state)
+      atc_peri_state = 1;
   }
   state_clear_local = state == STATE_CLEAR;
 
@@ -336,6 +343,7 @@ void atc_parser_init() {
   atc_parser_clear();
 
   xSemaphoreGive(atc_cansend);
+  atc_peri_state = 1; // init state is cansend
 
   debug("atc_parser_init: done\r\n");
 
@@ -352,7 +360,11 @@ void atc_dispatch(const atc_msg_t *msg) {
   case atc_inval:
     // hint the message
     if (msg->type == atc_parse_error) {
-      printf("atc_dispatch: parser error: %s\r\n", msg->msg);
+      if (strncmp(msg->msg, "AT", 2) == 0 ||
+          strncmp(msg->msg, "Recv", 4) == 0 ||
+          strncmp(msg->msg, "bytes", 5) == 0) {
+      } else
+        printf("atc_dispatch: parser error: %s\r\n", msg->msg);
     } else {
       printf("atc_dispatch: invalid values: id=%d, len=%d\r\n", msg->id,
              msg->len);
@@ -423,8 +435,8 @@ void atc_parser_loop() {
     BaseType_t pass = xQueueReceive(m_esp8266_qin, &recvbyte, portMAX_DELAY);
 
     if (pass == pdTRUE) {
-      if (!isspace(recvbyte)) {
-        // debug("recv: %c\r\n", recvbyte);
+      if (!isspace(recvbyte) && !isnewline(recvbyte)) {
+        debug2("recv: %c\r\n", recvbyte);
       } else {
         // debug("atc_parser_loop: received byte: 0x%x\r\n", recvbyte);
       }

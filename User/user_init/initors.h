@@ -15,7 +15,7 @@
 ///@brief user-defined peripheral port initialization steps
 
 #define USER_UART1_SPEED 115200
-#define USER_UART3_SPEED 115200
+#define USER_UART3_SPEED 9600
 
 void LED_init();
 

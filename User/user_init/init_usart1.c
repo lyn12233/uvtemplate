@@ -194,7 +194,7 @@ void uart3_init() {
       .Instance = USART3,
       .Init =
           (UART_InitTypeDef){
-              .BaudRate = 115200,
+              .BaudRate = USER_UART3_SPEED,
               .WordLength = UART_WORDLENGTH_8B,
               .StopBits = UART_STOPBITS_1,
               .Parity = UART_PARITY_NONE,
@@ -233,9 +233,9 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART3) {
     if (!m_esp8266_senddone)
       return;
-    BaseType_t yield_flag = pdFALSE;
-    xSemaphoreGiveFromISR(m_esp8266_senddone, &yield_flag);
-    (void)yield_flag;
+    BaseType_t shouldyield = pdFALSE;
+    xSemaphoreGiveFromISR(m_esp8266_senddone, &shouldyield);
+    portYIELD_FROM_ISR(shouldyield);
   }
 }
 

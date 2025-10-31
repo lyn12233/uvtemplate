@@ -17,6 +17,7 @@ extern SemaphoreHandle_t atc_wonna; // impl in parser
 
 typedef enum {
   atc_start,     // AT
+  atc_echo_off,  // ATE0
   atc_reset,     // AT+RST
   atc_cwmode,    // AT+CWMODE=3 (station+softap)
   atc_cwjap,     // AT+CWJAP=ssid:str,pwd:str
@@ -59,4 +60,6 @@ void atc_exec_loop();
 
 // tcp req ser/deser scheme: qin {result_q, cmd} result to result_q
 
-// int atc_sock_init();
+extern volatile uint8_t atc_peri_state; // impl in parser
+void atc_consume_transfer_ready();
+void atc_consume_cmd_ready();

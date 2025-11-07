@@ -3,6 +3,7 @@
 #include "initors.h"
 
 #include "blink_task.h"
+#include "projdefs.h"
 #include "tcp_echo_task.h"
 
 #include "esp/exec.h"
@@ -26,6 +27,19 @@ static void exec_task(void *p) {
   debug("exec_task: enter\r\n");
   atc_exec_loop();
 }
+static void sdio_init_task(void *p) {
+  (void)p;
+loop:
+  puts("try init sdio");
+  if (sdio_init()) {
+    puts("sdio init success");
+  } else {
+    puts("sdio init retry");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    goto loop;
+  }
+  vTaskDelete(NULL);
+};
 
 void user_init() {
   HAL_Init();
@@ -36,8 +50,9 @@ void user_init() {
   puts("==========logging-enaled==========");
   uart3_init();
   puts("uart3 init done");
-  // sdio_init();
-  // puts("sdio init done");
+
+  // postpone init sdio
+  xTaskCreate(sdio_init_task, "", 128, NULL, configMAX_PRIORITIES - 2, NULL);
 
   atc_parser_init();
   puts("parser init done");

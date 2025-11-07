@@ -40,7 +40,7 @@ extern ADC_HandleTypeDef m_adch;
 void adc_init();
 
 extern SD_HandleTypeDef m_sdh;
-void sdio_init();
+int sdio_init();
 void HAL_SD_MspInit(SD_HandleTypeDef *hsd);
 
 // misc

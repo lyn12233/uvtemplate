@@ -78,7 +78,7 @@ void uart1_init() {
   // start test task; should be replaced
   u1recv_sem = xSemaphoreCreateBinary();
   assert(u1recv_sem);
-  xTaskCreate(u1recv_process, "u1_process", 512, NULL, configMAX_PRIORITIES - 3,
+  xTaskCreate(u1recv_process, "u1_recv", 128, NULL, configMAX_PRIORITIES - 3,
               NULL);
 
   // start first receive

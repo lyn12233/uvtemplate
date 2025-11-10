@@ -95,8 +95,8 @@ void user_init() {
   // create task
   BaseType_t res;
 
-  res = xTaskCreate(BlinkTask, "blinkTask", configMINIMAL_STACK_SIZE, NULL,
-                    configMAX_PRIORITIES - 2, NULL);
+  res = xTaskCreate(BlinkTask, "blinkTask", 128, NULL, configMAX_PRIORITIES - 2,
+                    NULL);
   assert(res == pdPASS);
   res = xTaskCreate(tcp_echo_task, "tcpEchoTask", 512, NULL,
                     configMAX_PRIORITIES - 2, NULL);

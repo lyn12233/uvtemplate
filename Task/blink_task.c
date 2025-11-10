@@ -10,9 +10,12 @@
 
 #include "ff.h"
 
+#include <stdint.h>
+
 #include "log.h"
 
 void BlinkTask(void *p) {
+
   while (!fs_init_done) {
     puts("blink task: wait fs init");
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -25,6 +28,8 @@ void BlinkTask(void *p) {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
 
     cnt = (cnt + 1) % 10;
+    // st[130 - cnt] *= cnt; // stack overflow test
+
     if (!cnt) {
       printf("blink task: free size: %d\r\n", (int)xPortGetFreeHeapSize());
 

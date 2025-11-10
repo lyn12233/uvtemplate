@@ -13,10 +13,10 @@
 
 /* Called if a stack overflow is detected. */
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
-  printf("Stack overflow in task: %s\n", pcTaskName);
-  /* to halt execution safely */
+  for (int i = 0; i < 10; i++)
+    printf("Stack overflow in task: %s\n", pcTaskName);
   taskDISABLE_INTERRUPTS();
-  /* log or blink an LED here */
+  __disable_irq();
   __BKPT(0);
   for (;;)
     ;

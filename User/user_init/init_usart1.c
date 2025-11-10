@@ -34,7 +34,6 @@ UART_HandleTypeDef m_uh = {0};
 #define SZ_DMA1C5_BUF 256
 uint8_t m_u1dma_buf[SZ_DMA1C5_BUF];
 
-SemaphoreHandle_t u1recv_sem = NULL;
 uint8_t u1recv_byte;
 static void u1recv_process(void *p);
 
@@ -75,12 +74,6 @@ void uart1_init() {
   HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(USART1_IRQn);
 
-  // start test task; should be replaced
-  u1recv_sem = xSemaphoreCreateBinary();
-  assert(u1recv_sem);
-  xTaskCreate(u1recv_process, "u1_recv", 128, NULL, configMAX_PRIORITIES - 3,
-              NULL);
-
   // start first receive
   HAL_StatusTypeDef res;
   res = HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
@@ -107,9 +100,8 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
   if (huart->Instance == USART1) {
     // puts("here");
 
-    if (u1recv_sem && m_esp8266_qin) {
+    if (m_esp8266_qin) {
       BaseType_t shouldyield = pdFALSE;
-      xSemaphoreGiveFromISR(u1recv_sem, &shouldyield);
       xQueueSendFromISR(m_esp8266_qin, &u1recv_byte, &shouldyield);
       portYIELD_FROM_ISR(shouldyield);
     }
@@ -141,18 +133,6 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
       HAL_UART_Receive_IT(&m_uh, &u1recv_byte, 1);
     } else {
       HAL_UART_Receive_IT(&m_u3h, &m_esp8266_recvbyte, 1);
-    }
-  }
-}
-
-// implementation of dma processing task
-static void u1recv_process(void *p) {
-  (void)p;
-  size_t last_pos = 0;
-  puts("u1recv start");
-  while (1) {
-    if (xSemaphoreTake(u1recv_sem, portMAX_DELAY) == pdTRUE) {
-      // puts("u1dma_process: got sem");
     }
   }
 }

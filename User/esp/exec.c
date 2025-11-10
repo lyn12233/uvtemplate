@@ -19,7 +19,7 @@
 
 void atc_send(const void *buff, uint32_t bufflen) {
   HAL_StatusTypeDef res;
-  debug2("atc_send: sending %lu bytes\r\n", bufflen);
+  debug("atc_send: sending %lu bytes\r\n", bufflen);
 
   res = HAL_UART_Transmit_IT(&m_u3h, buff, bufflen);
 
@@ -35,7 +35,7 @@ void atc_send(const void *buff, uint32_t bufflen) {
       printf("can't wait send done\r\n");
   }
 
-  debug2("atc_send: sent\r\n");
+  debug("atc_send: sent\r\n");
 }
 
 // valid length for ssid and password(?)
@@ -109,10 +109,12 @@ void atc_exec(const atc_cmd_t *cmd) {
     break;
 
   case atc_cipsend: {
+    debug("exec: atc_cipsend\r\n");
     int offs = 0, cur_len;
 
     while (offs < cmd->len) {
-      cur_len = offs + 1024 < cmd->len ? 1024 : (cmd->len - offs);
+      cur_len = offs + ATC_SEND_CHUNK_SIZE < cmd->len ? ATC_SEND_CHUNK_SIZE
+                                                      : (cmd->len - offs);
 
       atc_send("AT+CIPSEND=", 11);
       ibuff = itoa(cmd->id, 10);
@@ -122,17 +124,24 @@ void atc_exec(const atc_cmd_t *cmd) {
       atc_send(ibuff.str, strnlen(ibuff.str, 20));
       atc_send("\r\n", 2);
 
-      // wait wonna state conditionally, force send upon failure
+      // expect OK, else no send
       res = get_sendres();
-      if (res == atc_ok && atc_wonna) {
+
+      debug("atc_exec: determine wait %d, \r\n", res == atc_ok);
+
+      if (res == atc_ok) {
         debug("atc_exec: waiting wonna...\r\n");
-        // xSemaphoreTake(atc_wonna, portMAX_DELAY);
         atc_consume_transfer_ready();
       }
       atc_send(&cmd->buff[offs], cur_len);
 
-      if (res != atc_ok)
+      // expect SEND_OK per chunk
+      res2 = get_sendres();
+
+      if (res != atc_ok || res2 != atc_send_ok) {
+        debug("atc_exec: send abort %d,%d", res, res2);
         break;
+      }
 
       offs += cur_len;
     }
@@ -152,7 +161,7 @@ void atc_exec(const atc_cmd_t *cmd) {
   if (cmd->type != atc_cipsend) {
     res = get_sendres();
   } else if (res == atc_ok) {
-    res2 = get_sendres();
+    // res2 = get_sendres();
   }
   debug("exec: cmd result: %d\r\n", res);
 
@@ -213,6 +222,8 @@ void atc_consume_transfer_ready() {
     if (atc_peri_state == 2) {
       atc_peri_state = 0;
       return;
+    } else {
+      debug("peri state = %d, retry\r\n", atc_peri_state);
     }
   }
   puts("exec: can wait wonna signal timeout");

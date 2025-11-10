@@ -10,10 +10,9 @@
 
 #include <stdint.h>
 
-extern UART_HandleTypeDef m_u3h;
+#define ATC_SEND_CHUNK_SIZE 16
 
-extern SemaphoreHandle_t atc_cansend;
-extern SemaphoreHandle_t atc_wonna; // impl in parser
+extern UART_HandleTypeDef m_u3h;
 
 typedef enum {
   atc_start,     // AT

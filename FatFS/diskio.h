@@ -1,9 +1,12 @@
+// clang-format off
 /*-----------------------------------------------------------------------/
 /  Low level disk interface modlue include file   (C)ChaN, 2025          /
 /-----------------------------------------------------------------------*/
 
 #ifndef _DISKIO_DEFINED
 #define _DISKIO_DEFINED
+
+#include "ff.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -97,7 +97,7 @@ uint8_t atc_parse_char(uint8_t c) {
 
     } else if (c == '>') {
       // data transfer ready
-      xSemaphoreGive(atc_wonna);
+      debug("atc_parse_char: transfer ready");
       atc_peri_state = 2;
 
     } else if (isdigit(c)) {
@@ -300,8 +300,7 @@ uint8_t atc_parse_char(uint8_t c) {
   } // switch
 
   if (/*!state_clear_local &&*/ state == STATE_CLEAR) {
-    debug("atc_parser: cansend semaphore give\r\n");
-    xSemaphoreGive(atc_cansend);
+    debug("atc_parser: cansend\r\n");
     // do not overrride wonna readiness
     if (!atc_peri_state)
       atc_peri_state = 1;
@@ -315,8 +314,7 @@ volatile uint8_t atc_parser_init_done = 0;
 volatile uint8_t conn_state[NB_SOCK]; // 0 for close, 1 for open
 QueueHandle_t conn_preaccepted;       // <u8>
 QueueHandle_t conn_recv[NB_SOCK] = {0};
-SemaphoreHandle_t atc_wonna = NULL;
-SemaphoreHandle_t atc_cansend = NULL;
+
 QueueHandle_t atc_sendres = NULL;
 
 void atc_parser_init() {
@@ -331,10 +329,7 @@ void atc_parser_init() {
   }
   conn_preaccepted = xQueueCreate(20, sizeof(uint8_t));
   assert(conn_preaccepted);
-  atc_wonna = xSemaphoreCreateBinary();
-  assert(atc_wonna);
-  atc_cansend = xSemaphoreCreateBinary();
-  assert(atc_cansend);
+
   atc_sendres = xQueueCreate(1, sizeof(atc_msg_type_t));
   assert(atc_sendres);
 
@@ -342,7 +337,6 @@ void atc_parser_init() {
 
   atc_parser_clear();
 
-  xSemaphoreGive(atc_cansend);
   atc_peri_state = 1; // init state is cansend
 
   debug("atc_parser_init: done\r\n");
@@ -362,7 +356,8 @@ void atc_dispatch(const atc_msg_t *msg) {
     if (msg->type == atc_parse_error) {
       if (strncmp(msg->msg, "AT", 2) == 0 ||
           strncmp(msg->msg, "Recv", 4) == 0 ||
-          strncmp(msg->msg, "bytes", 5) == 0) {
+          strncmp(msg->msg, "bytes", 5) == 0 ||
+          strncmp(msg->msg, "busy", 4) == 0) {
       } else
         printf("atc_dispatch: parser error: %s\r\n", msg->msg);
     } else {
@@ -436,7 +431,7 @@ void atc_parser_loop() {
 
     if (pass == pdTRUE) {
       if (!isspace(recvbyte) && !isnewline(recvbyte)) {
-        debug2("recv: %c\r\n", recvbyte);
+        debug("recv: %c\r\n", recvbyte);
       } else {
         // debug("atc_parser_loop: received byte: 0x%x\r\n", recvbyte);
       }

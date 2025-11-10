@@ -44,7 +44,7 @@ int putchar_v2(int val);
   }
 #define assert(x) CHECK_FAIL(x)
 
-#if defined(STDPORT_USE_DEBUG1) || 0
+#if defined(STDPORT_USE_DEBUG1) || 1
 #define debug printf_v2
 #else
 #define debug(...)                                                             \

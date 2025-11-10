@@ -2,6 +2,7 @@
 ///@brief variant object
 #pragma once
 
+#include <stddef.h>
 #include <stdint.h>
 
 ///@defgroup types_vo
@@ -24,6 +25,7 @@ typedef enum {
   vot_u64,
   vot_string,
   vot_mpint,
+  vot_namelist, // ',' spearated items in string
   vot_list,
 } vo_type_t;
 
@@ -76,6 +78,9 @@ void vbuff_iaddc(vstr_t *str, char c);
 void vbuff_iaddu32(vstr_t *str, uint32_t c);
 void vbuff_iaddu64(vstr_t *str, uint64_t c);
 void vbuff_iadd(vstr_t *str, const char *pc, uint32_t len);
+void vbuff_iaddmp(vstr_t *str, const char *pc, uint32_t len);
+void vbuff_dump(const vstr_t *str);
+void buff_dump(const void *data, uint32_t datalen);
 
 vlist_t *vlist_create(uint32_t resv);
 void vlist_delete(vlist_t *list);
@@ -92,6 +97,22 @@ void vo_init(vo_t *vo, vo_type_t type);
 void vo_clear(vo_t *vo);
 
 void vo_copy(const vo_t *src, vo_t *dst);
-vstr_t *vo_tobuff(const vo_t *vo);
+
+void vo_repr(const vo_t *vo);
+
+struct vo_initializer {
+  vo_type_t type;
+  union {
+    struct vo_initializer *list;
+
+    uint8_t u8;
+    uint32_t u32;
+    uint64_t u64;
+    const char *str;
+  };
+};
+
+typedef const struct vo_initializer *vo_initializer_list;
+vo_t *vo_create_list_from_il(vo_initializer_list il);
 
 ///@}

@@ -11,29 +11,45 @@
 
 #include "diskio.h" /* Declarations FatFs MAI */
 
-/* Example: Declarations of the platform and disk functions in the project */
-#include "platform.h"
-#include "storage.h"
+#include "stm32f1xx_hal.h"
+#include "stm32f1xx_hal_sd.h"
 
-/* Example: Mapping of physical drive number for each drive */
-#define DEV_FLASH 0 /* Map FTL to physical drive 0 */
-#define DEV_MMC 1   /* Map MMC/SD card to physical drive 1 */
-#define DEV_USB 2   /* Map USB MSD to physical drive 2 */
+extern SD_HandleTypeDef m_sdh;
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */
 /*-----------------------------------------------------------------------*/
 
-DSTATUS disk_status(BYTE pdrv /* Physical drive nmuber to identify the drive */
-) {}
+static int is_card_present() { return 1; }
+
+DSTATUS disk_status(BYTE pdrv) {
+  if (pdrv != 0)
+    return STA_NOINIT;
+  if (!is_card_present())
+    return STA_NODISK;
+  if (m_sdh.State == HAL_SD_STATE_RESET)
+    return STA_NOINIT;
+  return 0;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Inidialize a Drive                                                    */
 /*-----------------------------------------------------------------------*/
 
 DSTATUS
-disk_initialize(BYTE pdrv /* Physical drive nmuber to identify the drive */
-) {}
+disk_initialize(BYTE pdrv) {
+  if (pdrv != 0)
+    return STA_NOINIT;
+  if (!is_card_present())
+    return STA_NODISK;
+
+  if (m_sdh.State == HAL_SD_STATE_RESET) {
+    if (HAL_SD_Init(&m_sdh) != HAL_OK) {
+      return STA_NOINIT;
+    }
+  }
+  return 0;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Read Sector(s)                                                        */
@@ -43,7 +59,28 @@ DRESULT disk_read(BYTE pdrv,  /* Physical drive nmuber to identify the drive */
                   BYTE *buff, /* Data buffer to store read data */
                   LBA_t sector, /* Start sector in LBA */
                   UINT count    /* Number of sectors to read */
-) {}
+) {
+
+  if (pdrv != 0 || count == 0)
+    return RES_PARERR;
+  if (!is_card_present())
+    return RES_NOTRDY;
+
+  if (HAL_SD_ReadBlocks(&m_sdh,                                          //
+                        (void *)buff, (uint32_t)sector, (uint32_t)count, //
+                        HAL_MAX_DELAY                                    //
+                        ) != HAL_OK) {
+    return RES_ERROR;
+  }
+
+  /* wait for transfer to complete */
+  uint32_t tout = HAL_GetTick() + 5000;
+  while (HAL_SD_GetCardState(&m_sdh) != HAL_SD_CARD_TRANSFER) {
+    if (HAL_GetTick() > tout)
+      return RES_ERROR;
+  }
+  return RES_OK;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Write Sector(s)                                                       */
@@ -55,7 +92,26 @@ DRESULT disk_write(BYTE pdrv, /* Physical drive nmuber to identify the drive */
                    const BYTE *buff, /* Data to be written */
                    LBA_t sector,     /* Start sector in LBA */
                    UINT count        /* Number of sectors to write */
-) {}
+) {
+  if (pdrv != 0 || count == 0)
+    return RES_PARERR;
+  if (!is_card_present())
+    return RES_NOTRDY;
+
+  if (HAL_SD_WriteBlocks(&m_sdh, //
+                         (void *)buff, (uint32_t)sector,
+                         (uint32_t)count, //
+                         HAL_MAX_DELAY    //
+                         ) != HAL_OK) {
+    return RES_ERROR;
+  }
+  uint32_t tout = HAL_GetTick() + 5000;
+  while (HAL_SD_GetCardState(&m_sdh) != HAL_SD_CARD_TRANSFER) {
+    if (HAL_GetTick() > tout)
+      return RES_ERROR;
+  }
+  return RES_OK;
+}
 
 #endif
 
@@ -66,4 +122,40 @@ DRESULT disk_write(BYTE pdrv, /* Physical drive nmuber to identify the drive */
 DRESULT disk_ioctl(BYTE pdrv, /* Physical drive nmuber (0..) */
                    BYTE cmd,  /* Control code */
                    void *buff /* Buffer to send/receive control data */
-) {}
+) {
+  if (pdrv != 0)
+    return RES_PARERR;
+  if (!is_card_present())
+    return RES_NOTRDY;
+
+  DRESULT res = RES_ERROR;
+  HAL_SD_CardInfoTypeDef CardInfo;
+
+  switch (cmd) {
+  case CTRL_SYNC:
+    if (HAL_SD_GetCardState(&m_sdh) == HAL_SD_CARD_TRANSFER)
+      res = RES_OK;
+    break;
+  case GET_SECTOR_COUNT:
+    if (HAL_SD_GetCardInfo(&m_sdh, &CardInfo) == HAL_OK) {
+      *(DWORD *)buff = CardInfo.LogBlockNbr;
+      res = RES_OK;
+    }
+    break;
+  case GET_SECTOR_SIZE:
+    if (HAL_SD_GetCardInfo(&m_sdh, &CardInfo) == HAL_OK) {
+      *(WORD *)buff = CardInfo.LogBlockSize;
+      res = RES_OK;
+    }
+    break;
+  case GET_BLOCK_SIZE:
+    if (HAL_SD_GetCardInfo(&m_sdh, &CardInfo) == HAL_OK) {
+      *(DWORD *)buff = 1; /* or CardInfo.LogBlockSize / 512 if available */
+      res = RES_OK;
+    }
+    break;
+  default:
+    res = RES_PARERR;
+  }
+  return res;
+}

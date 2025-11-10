@@ -10,7 +10,7 @@
 
 #include "log.h"
 
-SD_HandleTypeDef m_sdh;
+SD_HandleTypeDef m_sdh = {0};
 
 int sdio_init() {
 

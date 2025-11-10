@@ -12,6 +12,8 @@
 
 #include "stm32f1xx_hal.h"
 
+#include "ff.h"
+
 #include "log.h"
 
 #ifdef USE_ESP8266_NETWORK
@@ -27,6 +29,10 @@ static void exec_task(void *p) {
   debug("exec_task: enter\r\n");
   atc_exec_loop();
 }
+
+FATFS m_fso = {0};
+uint8_t fs_init_done = 0;
+
 static void sdio_init_task(void *p) {
   (void)p;
 loop:
@@ -38,6 +44,19 @@ loop:
     vTaskDelay(pdMS_TO_TICKS(1000));
     goto loop;
   }
+loop2:
+  puts("filesystem: mounting");
+  FRESULT fr = f_mount(&m_fso, "", 1);
+  if (fr == FR_OK) {
+    puts("filesystem: mounted");
+    fs_init_done = 1;
+  } else {
+    printf("filesystem: mount error: %d\r\n", fr);
+    puts("filesystem: mount retry...");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    goto loop2;
+  }
+
   vTaskDelete(NULL);
 };
 

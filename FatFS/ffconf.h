@@ -75,4 +75,6 @@
 #define FF_FS_REENTRANT 1
 #define FF_FS_TIMEOUT 1000
 
+#define OS_TYPE 3
+
 /*--- End of configuration options ---*/

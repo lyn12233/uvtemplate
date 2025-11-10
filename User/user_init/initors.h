@@ -9,6 +9,8 @@
 #include "stm32f1xx_hal_sd.h"
 #include "stm32f1xx_hal_uart.h"
 
+#include "ff.h"
+
 #include <stdint.h>
 
 ///@defgroup user_init
@@ -47,8 +49,12 @@ void HAL_SD_MspInit(SD_HandleTypeDef *hsd);
 
 #define LED_TOGGLE() HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5)
 
-extern int systick_count; // implemented at _hooks.c
+extern int systick_count; // implemented at xxx_hooks.c
 
+extern FATFS m_fso;
+extern uint8_t fs_init_done;
+
+// all-in-one
 void user_init();
 
 #if !defined(USE_ESP8266_NETWORK) && !defined(USE_W5500_NETWORK)

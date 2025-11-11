@@ -98,7 +98,7 @@ void user_init() {
   res = xTaskCreate(BlinkTask, "blinkTask", 128, NULL, configMAX_PRIORITIES - 2,
                     NULL);
   assert(res == pdPASS);
-  res = xTaskCreate(tcp_sshd_task, "tcpSSHDTask", 2048, NULL,
+  res = xTaskCreate(tcp_sshd_task, "tcpSSHDTask", 1024 * 4, NULL,
                     configMAX_PRIORITIES - 2, NULL);
   assert(res == pdPASS);
 }

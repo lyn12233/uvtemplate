@@ -9,26 +9,16 @@
  * - Bo-Yin Yang
  */
 
+#include "types/vo.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "crypto_api.h"
 
-static void buff_dump(const void *data, uint32_t len) {
-  const uint8_t *p = data;
-  for (size_t i = 0; i < len; i += 32) {
-    // printf("%.4zu:", i);
-    for (size_t j = i; j < i + 32; j++) {
-      if (j < len)
-        printf("%02x", p[j]);
-      else {
-      }
-      // printf("\n");
-    }
-    printf("\n");
-  }
-}
+#include "allocator.h"
+#include "log.h"
 
 /* from supercop-20221122/crypto_verify/32/ref/verify.c */
 
@@ -1002,6 +992,7 @@ static void ge25519_double_scalarmult_vartime(ge25519_p3 *r,
 
 static void ge25519_scalarmult_base(ge25519_p3 *r, const sc25519 *s) {
   puts("this called");
+  assert(0);
   exit(-1);
   signed char b[85];
   int i;
@@ -1054,11 +1045,15 @@ int crypto_sign_ed25519(unsigned char *sm, unsigned long long *smlen,
   memmove(pk, sk + 32, 32);
   /* pk: 32-byte public key A */
 
+  puts("crypto sign (1)");
+
   crypto_hash_sha512(az, sk, 32);
   az[0] &= 248;
   az[31] &= 127;
   az[31] |= 64;
   /* az: 32-byte scalar a, 32-byte randomizer z */
+
+  puts("crypto sign (2)");
 
   *smlen = mlen + 64;
   memmove(sm + 64, m, mlen);
@@ -1068,8 +1063,8 @@ int crypto_sign_ed25519(unsigned char *sm, unsigned long long *smlen,
   crypto_hash_sha512(nonce, sm + 32, mlen + 32);
   /* nonce: 64-byte H(z,m) */
 
-  // puts("sig::nonce");
-  // buff_dump(nonce, 64);
+  puts("crypto sign: sig::nonce");
+  buff_dump(nonce, 64);
 
   sc25519_from64bytes(&sck, nonce);
 

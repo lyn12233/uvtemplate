@@ -945,11 +945,6 @@
               <FilePath>.\User\crypto\chacha.c</FilePath>
             </File>
             <File>
-              <FileName>ed25519-4.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\User\crypto\ed25519-4.c</FilePath>
-            </File>
-            <File>
               <FileName>hash.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\crypto\hash.c</FilePath>
@@ -975,9 +970,9 @@
               <FilePath>.\User\crypto\smult_curve25519_ref.c</FilePath>
             </File>
             <File>
-              <FileName>ed25519-2.c</FileName>
+              <FileName>ed25519.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\User\crypto\ed25519-2.c</FilePath>
+              <FilePath>.\User\crypto\ed25519.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1013,6 +1008,11 @@
               <FileName>s2_ecdh_init.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\ssh\s2_ecdh_init.c</FilePath>
+            </File>
+            <File>
+              <FileName>s3_userauth.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\s3_userauth.c</FilePath>
             </File>
           </Files>
         </Group>

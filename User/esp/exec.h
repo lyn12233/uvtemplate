@@ -10,7 +10,7 @@
 
 #include <stdint.h>
 
-#define ATC_SEND_CHUNK_SIZE 16
+#define ATC_SEND_CHUNK_SIZE 1024
 
 extern UART_HandleTypeDef m_u3h;
 

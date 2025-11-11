@@ -24,6 +24,16 @@ __pycache__/
 /FreeRTOS/
 /IOLibrary/
 /RTE/
+/tmp3/
+/User/crypto/chacha*
+/User/crypto/crypto_api.h
+/User/crypto/ed25519-2.c
+/User/crypto/ed25519.c
+/User/crypto/hash.c
+/User/crypto/poly*
+/User/crypto/sha*
+/User/crypto/smul*
+/User/wiz/
 Template/
 *.ioc
 /MDK-ARM/

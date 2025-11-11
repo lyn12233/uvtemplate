@@ -31,7 +31,7 @@ int is_first_kex = 1;
 void consume_ecdh_init(int sock, ssh_context *ctx, int *done) {
   vstr_t vbuff;
   vstr_init(&vbuff, 0);
-  uint32_t payload_len;
+  size_t payload_len;
 
   // recv
   int res = recv_packet(sock, &vbuff, &payload_len);
@@ -43,6 +43,8 @@ void consume_ecdh_init(int sock, ssh_context *ctx, int *done) {
   }
 
   // decode
+  printf("ecdh: parse ecdh init\r\n");
+  vbuff_dump(&vbuff);
   vo_t *otmp = payload_decode(vbuff.buff + 1, payload_len, ecdhinit_types,
                               LEN_ECHDINIT_TYPES);
 
@@ -331,6 +333,7 @@ static void ecdh_calc_hash(ssh_context *ctx, vstr_t *h) {
 
 // s(before packetize)=crypto_sign(data=h,sk=[priv||pub])[:64]
 static void ecdh_sign_hash(ssh_context *ctx, vstr_t *h, vstr_t *s) {
+  puts("signing hash");
   static uint8_t sk[64];
   memcpy(sk, xample_priv_key, 32);
   memcpy(sk + 32, xample_pub_key, 32);
@@ -339,12 +342,14 @@ static void ecdh_sign_hash(ssh_context *ctx, vstr_t *h, vstr_t *s) {
   vstr_reserve(s, h->len + 64);
   s->len = h->len + 64;
   uint64_t smlen = 0;
+  puts("calling crypto_sign...");
   crypto_sign_ed25519(                                     //
       (void *)s->data, &smlen, (void *)h->data, h->len, sk //
   );
   assert(smlen == 64 + 32);
   s->len = 64;               // trim
   memset(sk, 0, sizeof(sk)); // for test, unecessary
+  puts("signing done");
 }
 
 static void ecdh_derive_keys(ssh_context *ctx) {

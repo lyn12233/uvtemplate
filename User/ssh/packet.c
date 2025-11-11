@@ -60,14 +60,15 @@ int recv_packet(           //
     return res;
   }
   if (res < (int)packet_length_) {
-    printf("Debug: Incomplete packet data received %d<%d\n", res,
+    printf("Debug: Incomplete packet data received %d<%d\r\n", res,
            packet_length_);
     return EAGAIN;
   }
 
   // padding_len
   uint8_t padding_len = vbuff->buff[0]; // 1 byte no endian
-  printf("Debug: padding_len = %u\n", padding_len);
+  printf("Debug: padding_len = %u, payload_len=%u\r\n", padding_len,
+         packet_length_ - padding_len - 1);
 
   // output length
   if (payload_length)

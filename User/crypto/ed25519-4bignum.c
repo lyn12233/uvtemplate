@@ -1,3 +1,5 @@
+#include "types/vo.h"
+
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -8,7 +10,6 @@
 
 typedef uint8_t u8;
 
-static void buff_dump(const void *data, uint32_t len);
 extern const u8 mod255[64];
 
 void int_add(u8 out[64], const u8 a[64], const u8 b[64]) {
@@ -200,20 +201,6 @@ void int_inv(u8 out[64], const u8 m[64]) {
   memcpy(out, acc, 64);
 }
 
-static void buff_dump(const void *data, uint32_t len) {
-  const uint8_t *p = data;
-  for (size_t i = 0; i < len; i += 32) {
-    // printf("%.4zu:", i);
-    for (size_t j = i; j < i + 32; j++) {
-      if (j < len)
-        printf("%02x", p[j]);
-      else {
-      }
-      // printf("\n");
-    }
-    printf("\n");
-  }
-}
 const u8 mod255[64] = {
     0xED, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,

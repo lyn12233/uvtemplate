@@ -251,7 +251,7 @@ void ge_mul(ge *q, const u8 s[32], const ge *p) {
     b = s[byte];
     // for (int bit = 0; bit < 8; ++bit) {
     for (int bit = 7; bit >= 0; bit--) {
-      // printf("step %u\n", 255 - (byte * 8 + bit));
+      printf("step %u\r\n", 255 - (byte * 8 + bit));
 
       if (!((b >> bit) & 1)) { /* bit = 0 */
         // printf("0");
@@ -305,7 +305,9 @@ void raw_pub_from_raw_material(uint8_t *out, const uint8_t *mat) {
   // mat[31] &= 127;
   // mat[31] |= 64;
 
+  puts("ge_mul(&Q, mat, &G_4);");
   ge_mul(&Q, mat, &G_4);
+  puts("extended_homogeneous_to_affine(x, y, &Q);");
   extended_homogeneous_to_affine(x, y, &Q);
 
   // puts("raw: middle result:");
@@ -326,6 +328,8 @@ void raw_pub_from_raw_material64(uint8_t *out, const uint8_t *mat) {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   u8 s64[64];
 
+  puts("int_mod(s64, mat, L64);");
   int_mod(s64, mat, L64);
+  puts("raw_pub_from_raw_material(out, s64);");
   raw_pub_from_raw_material(out, s64);
 }

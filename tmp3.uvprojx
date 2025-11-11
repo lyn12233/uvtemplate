@@ -974,6 +974,11 @@
               <FileType>1</FileType>
               <FilePath>.\User\crypto\smult_curve25519_ref.c</FilePath>
             </File>
+            <File>
+              <FileName>ed25519-2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\ed25519-2.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -1003,6 +1008,11 @@
               <FileName>s1_kexinit.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\ssh\s1_kexinit.c</FilePath>
+            </File>
+            <File>
+              <FileName>s2_ecdh_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\s2_ecdh_init.c</FilePath>
             </File>
           </Files>
         </Group>

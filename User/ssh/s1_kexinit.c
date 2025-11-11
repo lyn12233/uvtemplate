@@ -74,4 +74,31 @@ void send_kexinit(int sock, ssh_context *ctx) {
 
   vstr_delete(packet);
 }
-void consume_kexinit(int sock, ssh_context *ctx) {}
+void consume_kexinit(int sock, ssh_context *ctx) {
+  vstr_t vbuff;
+  vstr_init(&vbuff, 0);
+  uint32_t payload_len;
+  int res;
+
+  res = recv_packet(sock, &vbuff, &payload_len);
+  if (res < 0) {
+    puts("conusme kexinit: can not recv packet");
+    vstr_clear(&vbuff);
+    return;
+  }
+
+  // store and represent
+  vstr_clear(&ctx->i_c);
+  vbuff_iadd(&ctx->i_c, &vbuff.data[1], payload_len);
+  vstr_clear(&vbuff);
+
+  // repr
+  vo_t *tmp = payload_decode(  //
+      &ctx->i_c, payload_len,  //
+      kex_types, LEN_KEX_TYPES //
+  );
+  printf("packet received length %d, payload:\n", (int)payload_len);
+  vo_repr(tmp);
+  vo_delete(tmp);
+  puts("");
+}

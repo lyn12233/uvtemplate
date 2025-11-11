@@ -16,13 +16,16 @@ typedef struct {
   vstr_t q_c, q_s; // ephemeral public key
   vstr_t k;        // shared secret K
   vstr_t h;        // hash H
-  vstr_t sid;      // session id, first H
-  vstr_t iv_c2s;   // 'A' 64 bytes
-  vstr_t iv_s2c;   // 'B' 64 bytes
-  vstr_t enc_c2s;  // 'C' 64 bytes
-  vstr_t enc_s2c;  // 'D' 64 bytes
-  vstr_t mac_c2s;  // 'E' 64 bytes
-  vstr_t mac_s2c;  // 'F' 64 bytes
+
+  int first_kex;
+
+  vstr_t sid;     // session id, first H
+  vstr_t iv_c2s;  // 'A' 64 bytes
+  vstr_t iv_s2c;  // 'B' 64 bytes
+  vstr_t enc_c2s; // 'C' 64 bytes
+  vstr_t enc_s2c; // 'D' 64 bytes
+  vstr_t mac_c2s; // 'E' 64 bytes
+  vstr_t mac_s2c; // 'F' 64 bytes
 
   struct {
     uint32_t seq_number;

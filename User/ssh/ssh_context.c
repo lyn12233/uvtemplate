@@ -12,16 +12,19 @@ ssh_context *ssh_context_create() {
   return ctx;
 }
 void ssh_context_init(ssh_context *ctx) {
-  vstr_init(&ctx->v_c, 0);     // set in exchange_version_header
-  vstr_init(&ctx->v_s, 0);     // set in exchange_version_header
-  vstr_init(&ctx->i_c, 0);     // set in consume_kexinit
-  vstr_init(&ctx->i_s, 0);     // set in send_kexinit
-  vstr_init(&ctx->k_s, 0);     // set in send_ecdh(pre)
-  vstr_init(&ctx->b, 0);       // gen by consume_ecdh_init(post)
-  vstr_init(&ctx->q_c, 0);     // set by consume_ecdh_init
-  vstr_init(&ctx->q_s, 0);     // set by consume_ecdh_init(post)
-  vstr_init(&ctx->k, 0);       // set by consume_ecdh_init(post)
-  vstr_init(&ctx->h, 0);       // set by send_ecdh_reply(pre)
+  vstr_init(&ctx->v_c, 0); // set in exchange_version_header
+  vstr_init(&ctx->v_s, 0); // set in exchange_version_header
+  vstr_init(&ctx->i_c, 0); // set in consume_kexinit
+  vstr_init(&ctx->i_s, 0); // set in send_kexinit
+  vstr_init(&ctx->k_s, 0); // set in send_ecdh(pre)
+  vstr_init(&ctx->b, 0);   // gen by consume_ecdh_init(post)
+  vstr_init(&ctx->q_c, 0); // set by consume_ecdh_init
+  vstr_init(&ctx->q_s, 0); // set by consume_ecdh_init(post)
+  vstr_init(&ctx->k, 0);   // set by consume_ecdh_init(post)
+  vstr_init(&ctx->h, 0);   // set by send_ecdh_reply(pre)
+
+  ctx->first_kex = 1;
+
   vstr_init(&ctx->sid, 0);     // track first h
   vstr_init(&ctx->iv_c2s, 0);  // set by exchange_newkey(post)
   vstr_init(&ctx->iv_s2c, 0);  // set by exchange_newkey(post)

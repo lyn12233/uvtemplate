@@ -338,7 +338,7 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_HAL_DRIVER,STM32F103xE,A=0,_WIZCHIP_=5500,_LOOPBACK_DEBUG_</Define>
+              <Define>USE_HAL_DRIVER,STM32F103xE,_WIZCHIP_=5500,_LOOPBACK_DEBUG_</Define>
               <Undefine></Undefine>
               <IncludePath>./Core/Inc;./Drivers/STM32F1xx_HAL_Driver/Inc/Legacy;./Drivers/STM32F1xx_HAL_Driver/Inc;./Drivers/CMSIS/Device/ST/STM32F1xx/Include;./Drivers/CMSIS/Include;.\FreeRTOS\include;.\FreeRTOS\port;.\User;.\Task;.\StdPort;.\IOLibrary\Ethernet;.\IOLibrary\Application\loopback;.\IOLibrary\Application\multicast;.\IOLibrary\Ethernet\W5500;.\FatFS</IncludePath>
             </VariousControls>
@@ -904,6 +904,11 @@
               <FileType>1</FileType>
               <FilePath>.\Task\tcp_echo_task.c</FilePath>
             </File>
+            <File>
+              <FileName>tcp_sshd_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Task\tcp_sshd_task.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -928,6 +933,76 @@
               <FileName>port_socket.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\StdPort\port_socket.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>crypto</GroupName>
+          <Files>
+            <File>
+              <FileName>chacha.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\chacha.c</FilePath>
+            </File>
+            <File>
+              <FileName>ed25519-4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\ed25519-4.c</FilePath>
+            </File>
+            <File>
+              <FileName>hash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\hash.c</FilePath>
+            </File>
+            <File>
+              <FileName>poly1305.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\poly1305.c</FilePath>
+            </File>
+            <File>
+              <FileName>random.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\random.c</FilePath>
+            </File>
+            <File>
+              <FileName>sha2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\sha2.c</FilePath>
+            </File>
+            <File>
+              <FileName>smult_curve25519_ref.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\smult_curve25519_ref.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>ssh</GroupName>
+          <Files>
+            <File>
+              <FileName>acpt_loop.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\acpt_loop.c</FilePath>
+            </File>
+            <File>
+              <FileName>packet.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\packet.c</FilePath>
+            </File>
+            <File>
+              <FileName>packet_def.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\packet_def.c</FilePath>
+            </File>
+            <File>
+              <FileName>ssh_context.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\ssh_context.c</FilePath>
+            </File>
+            <File>
+              <FileName>s1_kexinit.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\s1_kexinit.c</FilePath>
             </File>
           </Files>
         </Group>

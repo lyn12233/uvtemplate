@@ -400,7 +400,7 @@ void atc_dispatch(const atc_msg_t *msg) {
   } break;
 
   case atc_conn_recv: {
-    debug("atc_dispatch: received id=%d,len=%d\r\n", msg->id, msg->len);
+    debug2("atc_dispatch: received id=%d,len=%d\r\n", msg->id, msg->len);
     // if (!conn_state[msg->id])
     //   break;
     xQueueSend(conn_recv[msg->id], msg, portMAX_DELAY);

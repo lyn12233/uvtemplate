@@ -153,7 +153,7 @@ void vbuff_dump(const vstr_t *str) {
 void buff_dump(const void *data, uint32_t len) {
   const uint8_t *p = data;
   for (size_t i = 0; i < len; i += 16) {
-    printf("%.4zu:", i);
+    printf("%.4u:", (int)i);
     for (size_t j = i; j < i + 16; j++) {
       if (j < len)
         printf("%02x ", p[j]);

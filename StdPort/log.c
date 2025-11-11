@@ -115,7 +115,9 @@ int printf_v2(const char *s, ...) { //
       width = left_align ? -width : width;
 
       // precision
+      uint8_t has_precision = 0;
       if (*s == '.') {
+        has_precision = 1;
         s++;
         if (*s == '*') {
           precision = va_arg(args, int);
@@ -151,7 +153,8 @@ int printf_v2(const char *s, ...) { //
       } else if (c == 's') {
         const void *pc = va_arg(args, void *);
         pc = pc ? pc : "";
-        HAL_UART_Transmit(&m_uh, pc, strnlen(pc, 1024), -1);
+        HAL_UART_Transmit(&m_uh, pc,
+                          has_precision ? precision : strnlen(pc, 1024), -1);
       } else if (c == 'p') {
         const void *p = va_arg(args, void *);
         // pass

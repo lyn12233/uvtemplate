@@ -52,6 +52,7 @@ void tcp_echo_task(void *params) {
   vstr_t *buff = vstr_create(0);
   vstr_t *tmp = vstr_create(0);
   while (1) {
+    buff->len = 0;
     int res = sock_recv(acpt, buff, 1, 0);
     if (res >= 1) {
       vbuff_iadd(tmp, buff->data, 1);

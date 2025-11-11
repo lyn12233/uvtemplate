@@ -52,3 +52,5 @@ int sock_send(int sockfd, const vstr_t *buff, uint16_t len, int flags);
 ///@param flags unused, default blocking, MBZ
 ///@return number of bytes received or negative errno
 int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags);
+
+int sock_close(int sockfd);

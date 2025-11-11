@@ -141,8 +141,9 @@ int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags) {
     return 0;
 
   debug("sock_recv: start\r\n");
+  // do not clear;
   // trivial clear, no calls to free(&buff->data)
-  buff->len = 0;
+  // buff->len = 0;
 
   while (1) {
     // size: remaining required size to be put into buff
@@ -191,4 +192,20 @@ int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags) {
     }
   }
   return buff->len;
+}
+
+int sock_close(int sockfd) {
+  if (sockfd < 0 || sockfd > 4)
+    return EBADF;
+  if (!is_sock_conn(sockfd))
+    return ENOTCONN;
+
+  atc_cmd_t cmd;
+  cmd.type = atc_cipclose;
+  cmd.id = sockfd;
+  cmd.exec_res = NULL;
+
+  atc_exec(&cmd);
+
+  return 0;
 }

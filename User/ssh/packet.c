@@ -32,6 +32,7 @@ int recv_packet(           //
 
   int res = sock_recv(sock, &vtmp, 4, 0);
   if (res < 0) {
+    vstr_clear(&vtmp);
     return res;
   }
 
@@ -39,6 +40,9 @@ int recv_packet(           //
   packet_length_ = *((uint32_t *)vtmp.data);
   packet_length_ = ntohl(packet_length_);
   printf("Debug: total_packet_length = %u\n", packet_length_);
+
+  vstr_clear(&vtmp);
+  (void)vtmp;
 
   // validate packet length
   if (packet_length_ < 1 + 4) { // padding_length(1) + min_padding(4)
@@ -121,7 +125,12 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
   vstr_init(&main_recv, 4 + len + 16);
   memcpy(main_recv.buff, hdr_recv.buff, 4);
   main_recv.len = 4; // recv offs
+
+  vstr_clear(&hdr_recv);
+  (void)hdr_recv;
+
   sock_recv(sock, &main_recv, len + 16, 0);
+
   // verify first
   {
     const uint8_t *tag = main_recv.buff + 4 + len;
@@ -137,6 +146,7 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
   chacha_ivsetup(&ctx->c2s.ctx_main, pnounce, one);
   vstr_reserve(res, len);
   chacha_encrypt_bytes(&ctx->c2s.ctx_main, main_recv.buff + 4, res->buff, len);
+
   vstr_clear(&main_recv);
   res->len = len;
   // puts("recv enc packet:");
@@ -394,5 +404,27 @@ vstr_t *payload_encode(const vo_t *vo) {
     }
   }
   // vo_delete(vo2);
+  return res;
+}
+
+vstr_t *payload2packet(const vstr_t *payload, uint8_t mac_len) {
+  vstr_t *res = vstr_create(0);
+  vbuff_iaddc(res, 0); // 1 byte: padding len
+  vbuff_iadd(res, payload->data, payload->len);
+
+  // calc padding len
+  uint8_t pad_len = SSH_DEFAULT_PACKET_ALIGN -
+                    (res->len + mac_len) % SSH_DEFAULT_PACKET_ALIGN;
+  if (pad_len < 4)
+    pad_len += SSH_DEFAULT_PACKET_ALIGN;
+  res->data[0] = pad_len;
+
+  // add padding
+  for (int i = 0; i < pad_len; i++) {
+    vbuff_iaddc(res, i); // should be random
+  }
+
+  // printf("created packet len=%u\n", res->len);
+  assert((res->len + mac_len) % SSH_DEFAULT_PACKET_ALIGN == 0);
   return res;
 }

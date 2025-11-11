@@ -1,11 +1,15 @@
 #include "s1_kexinit.h"
 #include "esp/espsock.h"
+#include "packet_def.h"
+#include "ssh/packet.h"
+
+#include "port_unistd.h"
+#include "types/vo.h"
 
 #include <stdint.h>
 #include <string.h>
 
 #include "log.h"
-#include "types/vo.h"
 
 void exchange_version_header(int sock, ssh_context *ctx, int *done) {
   // send
@@ -26,7 +30,8 @@ void exchange_version_header(int sock, ssh_context *ctx, int *done) {
     vtmp.len = 0;
     if (sock_recv(sock, &vtmp, 1, 0) < 0) {
       debug2("version header: recv error\r\n");
-      break;
+      *done = 0;
+      goto dtor;
     }
     if (vtmp.data[0] != '\n' && vtmp.data[0] != '\r')
       vbuff_iaddc(&ctx->v_c, vtmp.data[0]);
@@ -37,6 +42,36 @@ void exchange_version_header(int sock, ssh_context *ctx, int *done) {
   vbuff_dump(&ctx->v_c);
 
   *done = 1;
+
+dtor:
+  vstr_clear(&vtmp);
 }
-void send_kexinit(int sock, ssh_context *ctx) {}
+
+void send_kexinit(int sock, ssh_context *ctx) {
+  vo_t *tmp = vo_create_list_from_il(kexinit_il);
+  printf("Debug: sending kexinit (entries %d)\n", tmp->vlist.nb);
+  puts("Debug: brief of kex packet s2c:");
+  vo_repr(tmp);
+  puts("");
+
+  // generate package and save to ctx
+  vstr_t *payload = payload_encode(tmp);
+  ctx->i_s.len = 0;
+  vbuff_iadd(&ctx->i_s, payload->data, payload->len);
+
+  vo_delete(tmp);
+  vstr_delete(payload);
+
+  vstr_t *packet = payload2packet(&ctx->i_s, 4);
+  printf("Debug: created packet (size: %d)\n", packet->len);
+
+  // send
+  uint32_t len_to_send = htonl(packet->len);
+  const vstr_t vlen = (vstr_t){.len = 4, .buff = (void *)&len_to_send};
+  sock_send(sock, &vlen, 4, 0);
+  sock_send(sock, packet, packet->len, 0);
+  puts("kexinit: sent");
+
+  vstr_delete(packet);
+}
 void consume_kexinit(int sock, ssh_context *ctx) {}

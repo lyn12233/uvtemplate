@@ -68,7 +68,8 @@ extern QueueHandle_t conn_preaccepted;   // 20*1
 extern QueueHandle_t conn_recv[NB_SOCK]; // 20*<msg>
 extern QueueHandle_t atc_sendres;        // 20*<msg_type>
 
-// to replace wonna, cansend. 1 cansend, 2 wonna
+// to replace wonna, cansend. 1 cansend, 2 wonna, 4 flow from peri, 0 flow to
+// peri
 extern volatile uint8_t atc_peri_state;
-void atc_consume_transfer_ready(); // impl in exec
-void atc_consume_cmd_ready();      // impl in exec
+int atc_consume_transfer_ready(); // impl in exec
+void atc_consume_cmd_ready();     // impl in exec

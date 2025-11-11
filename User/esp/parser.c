@@ -51,7 +51,7 @@ static uint16_t buff_offs;
 static uint8_t state;
 static atc_msg_t msg;
 
-volatile uint8_t atc_peri_state;
+volatile uint8_t atc_peri_state = 1;
 
 static inline uint8_t isalpha(uint8_t c) { //
   return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
@@ -65,8 +65,6 @@ static inline uint8_t isnewline(uint8_t c) { //
 static inline uint8_t isspace(uint8_t c) { //
   return c == ' ' || c == '\t';
 }
-
-uint8_t state_clear_local = 0;
 
 static void dispatch_err_msg() {
   msg_op[op_len > OP_MAXLEN ? OP_MAXLEN : op_len] = 0;
@@ -83,7 +81,6 @@ void atc_parser_clear() {
   state = STATE_CLEAR;
   msg_op[0] = 0;
   msg_op[OP_MAXLEN] = 0;
-  state_clear_local = 0;
 }
 
 // entering ensures atc_parser_init_done=1
@@ -104,13 +101,17 @@ uint8_t atc_parse_char(uint8_t c) {
       // x,CONNECTED/CLOSED
       // clear vars
       conn_id = c - '0', buff_len = 0, buff_offs = 0, op_len = 0;
+      // set state
+      atc_peri_state = 4;
       state = STATE_CONN_ID;
 
     } else if (isalpha(c) || c == '+') {
       msg_op[0] = c, op_len = 1;
+      atc_peri_state = 4;
       state = STATE_MSG_OP;
 
     } else {
+      atc_peri_state = 4;
       state = STATE_ERROR_CHAR;
     }
   } break;
@@ -183,6 +184,7 @@ uint8_t atc_parse_char(uint8_t c) {
         // end of a error msg, state clear
         dispatch_err_msg();
       }
+      atc_peri_state = 1;
       state = STATE_CLEAR;
     } else {
       // invalid character in or after opcode
@@ -221,6 +223,7 @@ uint8_t atc_parse_char(uint8_t c) {
       debug("atc_parser: ipd/conn_id next step\r\n");
       if (state == STATE_IPD_LEN && buff_len == 0) {
         // zero len: silent
+        atc_peri_state = 1;
         state = STATE_CLEAR;
       } else {
         state = state == STATE_IPD_LEN  ? STATE_IPD_DAT
@@ -231,6 +234,7 @@ uint8_t atc_parse_char(uint8_t c) {
       // invalid val
       msg.type = atc_inval, msg.id = conn_id, msg.len = state;
       atc_dispatch(&msg);
+      atc_peri_state = isnewline(c) ? 1 : atc_peri_state;
       state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
     }
   } break;
@@ -242,12 +246,18 @@ uint8_t atc_parse_char(uint8_t c) {
       msg_op[op_len] = c;
       op_len++;
       if (op_len == 7 && strncmp(msg_op, "CONNECT", op_len) == 0) {
+
+        // conn
         msg.type = atc_conn_accepted, msg.id = conn_id;
         atc_dispatch(&msg);
+        atc_peri_state = 1;
         state = STATE_CLEAR;
       } else if (op_len == 6 && strncmp(msg_op, "CLOSED", op_len) == 0) {
+
+        // close
         msg.type = atc_conn_closed, msg.id = conn_id;
         atc_dispatch(&msg);
+        atc_peri_state = 1;
         state = STATE_CLEAR;
       } else if (op_len >= 9) {
         // op too long unmatched
@@ -258,6 +268,7 @@ uint8_t atc_parse_char(uint8_t c) {
     } else {
       // error char in x,CONNECT op
       dispatch_err_msg();
+      atc_peri_state = isnewline(c) ? 1 : atc_peri_state;
       state = isnewline(c) ? STATE_CLEAR : STATE_ERROR_CHAR;
     }
   } break;
@@ -280,6 +291,7 @@ uint8_t atc_parse_char(uint8_t c) {
       msg.id = conn_id, msg.len = buff_len;
 
       atc_dispatch(&msg);
+      atc_peri_state = 1;
       state = STATE_CLEAR;
     }
 
@@ -290,6 +302,7 @@ uint8_t atc_parse_char(uint8_t c) {
   case STATE_ERROR_CHAR: {
     if (isnewline(c)) {
       debug("atc_parser: echo/err state clear\r\n");
+      atc_peri_state = 1;
       state = STATE_CLEAR;
     }
   } break;
@@ -299,13 +312,12 @@ uint8_t atc_parse_char(uint8_t c) {
 
   } // switch
 
-  if (/*!state_clear_local &&*/ state == STATE_CLEAR) {
+  if (state == STATE_CLEAR) {
     debug("atc_parser: cansend\r\n");
-    // do not overrride wonna readiness
+    // do not overrride transfer readiness
     if (!atc_peri_state)
       atc_peri_state = 1;
   }
-  state_clear_local = state == STATE_CLEAR;
 
   return state;
 }

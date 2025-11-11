@@ -200,6 +200,18 @@ int sock_close(int sockfd) {
   if (!is_sock_conn(sockfd))
     return ENOTCONN;
 
+  // clear queue
+  atc_msg_t dummy;
+  while (xQueueReceive(conn_recv[sockfd], &dummy, 0) == pdPASS) {
+    assert(dummy.type == atc_conn_recv);
+    vstr_delete(dummy.pdata);
+  }
+
+  // clear buff
+  vstr_clear(esk_recv_buff[sockfd]);
+
+  // send close command
+
   atc_cmd_t cmd;
   cmd.type = atc_cipclose;
   cmd.id = sockfd;

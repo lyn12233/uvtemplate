@@ -60,5 +60,5 @@ void atc_exec_loop();
 // tcp req ser/deser scheme: qin {result_q, cmd} result to result_q
 
 extern volatile uint8_t atc_peri_state; // impl in parser
-void atc_consume_transfer_ready();
+int atc_consume_transfer_ready();
 void atc_consume_cmd_ready();

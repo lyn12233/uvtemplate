@@ -131,12 +131,12 @@ void atc_exec(const atc_cmd_t *cmd) {
 
       if (res == atc_ok) {
         debug("atc_exec: waiting wonna...\r\n");
-        atc_consume_transfer_ready();
+        res2 = atc_consume_transfer_ready();
       }
-      atc_send(&cmd->buff[offs], cur_len);
-
-      // expect SEND_OK per chunk
-      res2 = get_sendres();
+      if (res2) { // should transfer
+        atc_send(&cmd->buff[offs], cur_len);
+        res2 = get_sendres();
+      }
 
       if (res != atc_ok || res2 != atc_send_ok) {
         debug("atc_exec: send abort %d,%d", res, res2);
@@ -215,20 +215,22 @@ void atc_exec_loop() {
   }
 }
 
-void atc_consume_transfer_ready() {
+int atc_consume_transfer_ready() {
   for (int i = 1; i < 2000; i *= 4) {
     if (i != 1)
       vTaskDelay(pdMS_TO_TICKS(i));
     if (atc_peri_state == 2) {
       atc_peri_state = 0;
-      return;
+      return 1;
     } else {
       debug("peri state = %d, retry\r\n", atc_peri_state);
     }
   }
-  puts("exec: can wait wonna signal timeout");
+  puts("exec: wait wonna signal timeout");
+  return atc_peri_state == 4 ? 0 : 1;
 }
 void atc_consume_cmd_ready() {
+loop:
   for (int i = 1; i < 2000; i *= 4) {
     if (i != 1)
       vTaskDelay(pdMS_TO_TICKS(i));
@@ -237,5 +239,11 @@ void atc_consume_cmd_ready() {
       return;
     }
   }
-  puts("exec: can wait cansend signal timeout");
+
+  if (atc_peri_state == 4) {
+    puts("exec: wait data flow in");
+    goto loop;
+  }
+
+  puts("exec: wait cansend signal timeout");
 }

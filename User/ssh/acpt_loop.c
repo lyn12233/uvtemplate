@@ -20,6 +20,9 @@ uint8_t sshd_acpt(int sock) {
     goto dtor;
   }
 
+  puts("stage2: exchange kexinit");
+  send_kexinit(sock, ctx);
+
 dtor:
   ssh_context_delete(ctx);
   return res;

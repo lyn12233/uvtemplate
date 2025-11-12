@@ -54,3 +54,6 @@ int sock_send(int sockfd, const vstr_t *buff, uint16_t len, int flags);
 int sock_recv(int sockfd, vstr_t *buff, size_t size, int flags);
 
 int sock_close(int sockfd);
+
+// non-canonical func
+int sock_is_conn(int sockfd);

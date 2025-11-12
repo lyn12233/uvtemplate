@@ -100,8 +100,16 @@ uint8_t sshd_acpt(int sock) {
 
   puts("stage5(2): sftp loop");
   while (!should_close) {
+    if (!sock_is_conn(sock)) {
+      puts("sshd_acpt: socket closed by the client");
+      res = -9;
+      goto dtor;
+    }
     sftp_parse(sock, ctx, NULL, &should_close);
   }
+  res = 0;
+
+  puts("stage6:cleanup");
 
 dtor:
   printf("sshd_acpt: returning %d\r\n", res);

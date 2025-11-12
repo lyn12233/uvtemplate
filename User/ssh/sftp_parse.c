@@ -7,8 +7,10 @@
 #include "ssh_context.h"
 #include "types/vo.h"
 
-#include "log.h"
 #include <stdint.h>
+#include <string.h>
+
+#include "log.h"
 
 #define DS_LEN 0
 #define DS_REG 1
@@ -45,16 +47,16 @@ void sftp_parse(int sock, ssh_context *ctx, QueueHandle_t q,
   vbuff_dump(recvd);
 
   uint8_t opcode = recvd->buff[1];
-  printf("sftp: parse opcode: %u\r\n", opcode);
+  printf("sftp: parse ssh opcode: %u\r\n", opcode);
 
   *should_close = 0;
   switch (opcode) {
   case SSH_MSG_CHANNEL_DATA: {
     vo_t *vo = payload_decode(&recvd->buff[1], recvd->len, chnldat_types, 3);
-    printf("sftp: data id:%u\r\n", vo->vlist.data[1].u32);
+    printf("sftp: ssh recip id:%u\r\n", vo->vlist.data[1].u32);
     const vstr_t *pstr = &vo->vlist.data[2].vstr;
-    puts("sftp: data:");
-    vbuff_dump(pstr);
+    // puts("sftp: data:");
+    // vbuff_dump(pstr);
 
     if (q) {
 
@@ -117,6 +119,13 @@ void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
       dpch_len = ntohl(*(uint32_t *)chnldat.buff);
       printf("sftp packet len: %u\r\n", dpch_len);
       vstr_clear(&chnldat);
+
+      if (dpch_len > SFTP_CHUNK) {
+        puts("sftp error: pkt too big");
+        *should_close = 1;
+        return;
+      }
+
       dpch_cnt = 0;
       dpch_state = dpch_len != 0 ? DS_REG : DS_LEN;
     }
@@ -127,7 +136,7 @@ void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
     dpch_cnt++;
 
     if (dpch_cnt >= dpch_len) {
-      sftp_dispatch_spkt(sock, ctx, &chnldat);
+      sftp_dispatch_spkt(sock, ctx, &chnldat, should_close);
       vstr_clear(&chnldat);
       dpch_cnt = 0, dpch_len = 4;
       dpch_state = DS_LEN;
@@ -139,25 +148,27 @@ void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
   } // switch
 }
 
+//
+//
+// sftp packet support
+
 static void sftp_send_pkt(int sock, ssh_context *ctx, const vstr_t *buff);
+static void send_version(int sock, ssh_context *ctx);
+static void send_status(int sock, ssh_context *ctx, uint32_t id,
+                        uint32_t status, const char *msg);
 
-static void send_version(int sock, ssh_context *ctx) {
-  vstr_t buff;
-  vstr_init(&buff, 9);
-
-  // vbuff_iaddu32(&buff, 5);
-  vbuff_iaddc(&buff, SSH_FXP_VERSION);
-  vbuff_iaddu32(&buff, 3);
-  sftp_send_pkt(sock, ctx, &buff);
-
-  vstr_clear(&buff);
-}
-
-void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt) {
+void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
+                        int *should_close) {
   puts("dispatch sftp packet:");
   vbuff_dump(pkt);
-  if (pkt->len == 0)
+  if (pkt->len < 5) {
+    // must have opcode:u8, id-or-version:u32
+    puts("sftp: packet too small");
+    *should_close = 1;
     return;
+  }
+
+  uint32_t id = ntohl(*(uint32_t *)(pkt->buff + 1));
 
   switch (pkt->buff[0]) {
 
@@ -169,6 +180,8 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt) {
   } break;
 
   default: {
+    // send an error status
+    send_status(sock, ctx, id, SSH_FX_OP_UNSUPPORTED, "not impl");
   } break;
   }
 }
@@ -183,8 +196,9 @@ static void sftp_send_pkt(int sock, ssh_context *ctx, const vstr_t *buff) {
   vbuff_iaddu32(&payload, buff->len + 4);      // string-len
   vbuff_iaddu32(&payload, buff->len);          // buff(buff.len)
   vbuff_iadd(&payload, buff->data, buff->len); // buff(buff.buff)
-  puts("sftp send: payload:");
-  vbuff_dump(&payload);
+
+  // puts("sftp send: payload:");
+  // vbuff_dump(&payload);
 
   vstr_t *packet = payload2packet(&payload, 16);
 
@@ -194,4 +208,37 @@ static void sftp_send_pkt(int sock, ssh_context *ctx, const vstr_t *buff) {
   send_packet_enc(sock, ctx, packet->data, packet->len);
 
   vstr_delete(packet);
+}
+
+static void send_version(int sock, ssh_context *ctx) {
+  vstr_t buff;
+  vstr_init(&buff, 9);
+
+  // vbuff_iaddu32(&buff, 5);
+  vbuff_iaddc(&buff, SSH_FXP_VERSION);
+  vbuff_iaddu32(&buff, 3);
+
+  sftp_send_pkt(sock, ctx, &buff);
+
+  vstr_clear(&buff);
+}
+
+static void send_status(int sock, ssh_context *ctx, uint32_t id,
+                        uint32_t status, const char *msg) {
+  vstr_t buff; // u8 u32 u32 str str
+  vstr_init(&buff, 0);
+
+  vbuff_iaddc(&buff, SSH_FXP_STATUS);
+  vbuff_iaddu32(&buff, id);
+  vbuff_iaddu32(&buff, status);
+  vbuff_iaddu32(&buff, strlen(msg));
+  vbuff_iadd(&buff, msg, strlen(msg));
+  vbuff_iaddu32(&buff, 0);
+
+  // puts("Debug: sftp sending status:");
+  // vbuff_dump(&buff);
+
+  sftp_send_pkt(sock, ctx, &buff);
+
+  vstr_clear(&buff);
 }

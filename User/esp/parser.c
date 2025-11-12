@@ -408,6 +408,7 @@ void atc_dispatch(const atc_msg_t *msg) {
 
   case atc_conn_closed: {
     // from the socket view, conn state is deter by conn_state and queue
+    printf("atc_dispatch: connection closed: %d\r\n", msg->id);
     conn_state[msg->id] = 0;
   } break;
 

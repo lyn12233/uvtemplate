@@ -221,3 +221,11 @@ int sock_close(int sockfd) {
 
   return 0;
 }
+
+int sock_is_conn(int id) {
+  if (id < 0 || id > 4)
+    return 0;
+  if (conn_state[id])
+    return 1;
+  return 0;
+}

@@ -36,7 +36,19 @@
 #define SSH_FXP_EXTENDED 200
 #define SSH_FXP_EXTENDED_REPLY 201
 
-#define SFTP_CHUNK 1024
+#define SSH_FX_OK 0
+#define SSH_FX_EOF 1
+#define SSH_FX_NO_SUCH_FILE 2
+#define SSH_FX_PERMISSION_DENIED 3
+#define SSH_FX_FAILURE 4
+#define SSH_FX_BAD_MESSAGE 5
+#define SSH_FX_NO_CONNECTION 6
+#define SSH_FX_CONNECTION_LOST 7
+#define SSH_FX_OP_UNSUPPORTED 8
+
+// restriction to the sftp packet length field. this is to restrict mass heap
+// allocation and DO NOT affect the CHANNEL_DATA message size or max packet size
+#define SFTP_CHUNK ((int)1024 * 3)
 
 void sftp_parser_init();
 
@@ -44,4 +56,5 @@ void sftp_parse(int sock, ssh_context *ctx, QueueHandle_t q, int *should_close);
 
 void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c, int *should_close);
 
-void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt);
+void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
+                        int *should_close);

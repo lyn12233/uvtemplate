@@ -137,8 +137,10 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
     const uint8_t *tag = main_recv.buff + 4 + len;
     uint8_t expected_tag[16];
     poly1305_auth(expected_tag, main_recv.buff, len + 4, polykey);
-    puts("verifying tag:");
-    buff_dump(tag, 16);
+
+    puts("verifying tag:...");
+    // buff_dump(tag, 16);
+
     buff_dump(expected_tag, 16); // not equal
     assert(memcmp(tag, expected_tag, 16) == 0);
   }
@@ -160,7 +162,7 @@ void send_packet_enc(int sock, ssh_context *ctx, void *data, uint32_t len) {
   const uint8_t *p = data;
   vstr_t tmp; // data to send
   vstr_init(&tmp, 4 + len + 16);
-  puts("sending:");
+  puts("enc: sending:...");
 
   // nounce
   uint64_t nounce = ctx->s2c.seq_number;
@@ -172,8 +174,8 @@ void send_packet_enc(int sock, ssh_context *ctx, void *data, uint32_t len) {
   uint8_t polykey[32] = {0};
   chacha_ivsetup(&ctx->s2c.ctx_main, pnounce, NULL);
   chacha_encrypt_bytes(&ctx->s2c.ctx_main, polykey, polykey, 32);
-  puts("polykey:");
-  buff_dump(polykey, 32);
+  puts("enc: polykey:...");
+  // buff_dump(polykey, 32);
 
   // enc packet_length (4 bytes)
   uint32_t net_len = htonl(len);

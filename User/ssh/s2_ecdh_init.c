@@ -316,8 +316,8 @@ static void ecdh_calc_hash(ssh_context *ctx, vstr_t *h) {
   // vbuff_iaddu32(&tmp, ctx->k.len); // already formatted
   vbuff_iadd(&tmp, ctx->k.data, ctx->k.len);
 
-  puts("hash material:");
-  vbuff_dump(&tmp);
+  // puts("hash material:");
+  // vbuff_dump(&tmp);
 
   // hash(aka digest)
   vstr_reserve(h, crypto_hash_sha256_BYTES);
@@ -379,8 +379,8 @@ static void ecdh_derive_keys(ssh_context *ctx) {
     );
 
     ls_str[c]->len = 64;
-    printf("derived key %c:\n", c + 'A');
-    vbuff_dump(ls_str[c]);
+    // printf("derived key %c:\n", c + 'A');
+    // vbuff_dump(ls_str[c]);
   }
 
   // expand to expected bytes?

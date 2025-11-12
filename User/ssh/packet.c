@@ -99,8 +99,8 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
   uint8_t polykey[32] = {0};
   chacha_ivsetup(&ctx->c2s.ctx_main, pnounce, NULL);
   chacha_encrypt_bytes(&ctx->c2s.ctx_main, polykey, polykey, 32);
-  puts("polykey:");
-  buff_dump(polykey, 32);
+  // puts("polykey:");
+  // buff_dump(polykey, 32);
 
   // read 4 bytes: packet length
   chacha_ivsetup(&ctx->c2s.ctx_hdr, pnounce, NULL);

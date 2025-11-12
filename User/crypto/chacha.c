@@ -56,8 +56,8 @@ static const char sigma[16] = "expand 32-byte k";
 static const char tau[16] = "expand 16-byte k";
 
 void chacha_keysetup(chacha_ctx *x, const u8 *k, u32 kbits) {
-  puts("chacha key setup:");
-  buff_dump(k, 32);
+  // puts("chacha key setup:");
+  // buff_dump(k, 32);
   const char *constants;
 
   x->input[4] = U8TO32_LITTLE(k + 0);
@@ -79,15 +79,15 @@ void chacha_keysetup(chacha_ctx *x, const u8 *k, u32 kbits) {
   x->input[2] = U8TO32_LITTLE(constants + 8);
   x->input[3] = U8TO32_LITTLE(constants + 12);
 
-  puts("key setup result:");
-  buff_dump(x, 64);
+  // puts("key setup result:");
+  // buff_dump(x, 64);
 }
 
 void chacha_ivsetup(chacha_ctx *x, const u8 *iv, const u8 *counter) {
-  puts("chacha ivsetup(ctx,iv,counter):");
-  buff_dump(x, 64);
-  buff_dump(iv, 8);
-  buff_dump(counter ? (void *)counter : (void *)"\0\0\0\0\0\0\0\0", 8);
+  // puts("chacha ivsetup(ctx,iv,counter):");
+  // buff_dump(x, 64);
+  // buff_dump(iv, 8);
+  // buff_dump(counter ? (void *)counter : (void *)"\0\0\0\0\0\0\0\0", 8);
 
   x->input[12] = counter == NULL ? 0 : U8TO32_LITTLE(counter + 0);
   x->input[13] = counter == NULL ? 0 : U8TO32_LITTLE(counter + 4);

@@ -92,8 +92,8 @@ void consume_kexinit(int sock, ssh_context *ctx) {
   vbuff_iadd(&ctx->i_c, &vbuff.data[1], payload_len);
   vstr_clear(&vbuff);
 
-  puts("I_c:");
-  vbuff_dump(&ctx->i_c);
+  // puts("I_c:");
+  // vbuff_dump(&ctx->i_c);
 
   // repr
   vo_t *tmp = payload_decode(      //

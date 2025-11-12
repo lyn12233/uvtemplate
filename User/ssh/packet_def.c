@@ -90,6 +90,55 @@ const vo_type_t userauth_pubkey_types[8] = {
     vot_string, // blobbed sig, len(full)=8
 };
 
+//
+//
+
+const vo_type_t chnlop_types[5] = {
+    vot_u8,  vot_string,
+    vot_u32, // sneder channel
+    vot_u32, // wind sz
+    vot_u32, // max pkt sz
+};
+const struct vo_initializer chnlop_cfm[5 + 1] = {
+    {.type = vot_u8, .u8 = SSH_MSG_CHANNEL_OPEN_CONFIRMATION},
+    {.type = vot_u32, .u32 = 0},        // recv chnl
+    {.type = vot_u32, .u32 = 0},        // send chnl
+    {.type = vot_u32, .u32 = 33554432}, // wind sz
+    {.type = vot_u32, .u32 = 2000},     // max pkt sz
+    {.type = vot_string, .str = NULL},
+};
+const vo_type_t chnlreq_types[4] = {
+    vot_u8,     // opc
+    vot_u32,    // recp chnl
+    vot_string, // req name
+    vot_u8,     // want reply
+};
+const vo_type_t chnlreq_subsys_types[5] = {
+    vot_u8,     // opc
+    vot_u32,    // recp chnl
+    vot_string, // req name
+    vot_u8,     // want reply
+    vot_string, // subsystem name
+};
+const struct vo_initializer chnlsuc[2 + 1] = {
+    {.type = vot_u8, .u8 = SSH_MSG_CHANNEL_SUCCESS},
+    {.type = vot_u32, .u32 = 0},
+    {.type = vot_string, .str = NULL},
+};
+
+//
+//
+
+const vo_type_t chnldat_types[3] = {
+    vot_u8,
+    vot_u32,    // recp id
+    vot_string, // data
+};
+
+//
+//
+//
+
 const uint8_t xample_priv_key[32] = {
     0xD0, 0x63, 0x16, 0xEB, 0x03, 0x8A, 0xCD, 0x72, 0xC1, 0x91, 0x17,
     0x89, 0x6F, 0xD5, 0x8F, 0x39, 0xA3, 0x73, 0xCB, 0xEB, 0x26, 0x54,

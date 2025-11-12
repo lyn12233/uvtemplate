@@ -1024,6 +1024,21 @@
               <FileType>1</FileType>
               <FilePath>.\User\ssh\s3_userauth.c</FilePath>
             </File>
+            <File>
+              <FileName>s4_openchnl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\s4_openchnl.c</FilePath>
+            </File>
+            <File>
+              <FileName>sftp_task.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\sftp_task.c</FilePath>
+            </File>
+            <File>
+              <FileName>sftp_parse.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\ssh\sftp_parse.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>

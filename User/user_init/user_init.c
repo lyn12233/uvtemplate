@@ -99,7 +99,7 @@ void user_init() {
                     NULL);
   assert(res == pdPASS);
   res = xTaskCreate(tcp_sshd_task, "tcpSSHDTask", 1024 * 4, NULL,
-                    configMAX_PRIORITIES - 2, NULL);
+                    configMAX_PRIORITIES - 1, NULL);
   assert(res == pdPASS);
 }
 

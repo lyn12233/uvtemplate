@@ -20,6 +20,8 @@
 
 #include "log.h"
 
+#ifndef USE_CRYPTO_V2
+
 #define int8 crypto_int8
 #define uint8 crypto_uint8
 #define int16 crypto_int16
@@ -3873,3 +3875,4 @@ badsig:
   return -1;
 }
 
+#endif

@@ -20,6 +20,8 @@
 #include "allocator.h"
 #include "log.h"
 
+#ifdef USE_CRYPTO_V2
+
 /* from supercop-20221122/crypto_verify/32/ref/verify.c */
 
 static int crypto_verify_32(const unsigned char *x, const unsigned char *y) {
@@ -1146,3 +1148,5 @@ badsig:
   memset(m, 0, smlen);
   return -1;
 }
+
+#endif

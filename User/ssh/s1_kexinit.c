@@ -92,10 +92,13 @@ void consume_kexinit(int sock, ssh_context *ctx) {
   vbuff_iadd(&ctx->i_c, &vbuff.data[1], payload_len);
   vstr_clear(&vbuff);
 
+  puts("I_c:");
+  vbuff_dump(&ctx->i_c);
+
   // repr
-  vo_t *tmp = payload_decode(  //
-      &ctx->i_c, payload_len,  //
-      kex_types, LEN_KEX_TYPES //
+  vo_t *tmp = payload_decode(      //
+      &ctx->i_c.data, payload_len, //
+      kex_types, LEN_KEX_TYPES     //
   );
   printf("packet received length %d, payload:\n", (int)payload_len);
   vo_repr(tmp);

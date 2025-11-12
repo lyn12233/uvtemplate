@@ -970,6 +970,16 @@
               <FilePath>.\User\crypto\smult_curve25519_ref.c</FilePath>
             </File>
             <File>
+              <FileName>ed25519-2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\ed25519-2.c</FilePath>
+            </File>
+            <File>
+              <FileName>ed25519-4.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\crypto\ed25519-4.c</FilePath>
+            </File>
+            <File>
               <FileName>ed25519.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\User\crypto\ed25519.c</FilePath>

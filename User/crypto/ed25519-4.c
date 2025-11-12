@@ -1,8 +1,12 @@
-#include "ed25519-4bignum.c"
+#include "crypto_api.h"
+
+#include "ed25519-4bignum.h"
 
 #include <stdint.h>
 
 #include "log.h"
+
+#ifdef USE_CRYPTO_V2
 
 typedef struct {
   u8 x[64];
@@ -13,11 +17,11 @@ typedef struct {
 
 void extended_homogeneous_to_affine(u8 x[64], u8 y[64], const ge *Q) {
   u8 zinv[64];
-  int_inv(zinv, Q->z);
-  int_mul(x, Q->x, zinv);
-  int_mod(x, x, mod255);
-  int_mul(y, Q->y, zinv);
-  int_mod(y, y, mod255);
+  int_inv((void *)zinv, (void *)Q->z);
+  int_mul((void *)x, (void *)Q->x, (void *)zinv);
+  int_mod((void *)x, (void *)x, (void *)mod255);
+  int_mul((void *)y, (void *)Q->y, (void *)zinv);
+  int_mod((void *)y, (void *)y, (void *)mod255);
 }
 
 void affine_to_extended_homogeneous(ge *Q, const u8 x[64], const u8 y[64]) {
@@ -25,8 +29,8 @@ void affine_to_extended_homogeneous(ge *Q, const u8 x[64], const u8 y[64]) {
   memcpy(Q->y, y, 64);
   memset(Q->z, 0, 64);
   Q->z[0] = 1;
-  int_mul(Q->t, x, y);
-  int_mod(Q->t, Q->t, mod255);
+  int_mul((void *)Q->t, (void *)x, (void *)y);
+  int_mod((void *)Q->t, (void *)Q->t, (void *)mod255);
 }
 
 void add_ge(ge *out, const ge *q1, const ge *q2) {
@@ -59,58 +63,58 @@ void add_ge(ge *out, const ge *q1, const ge *q2) {
   memcpy(twod, twod_const, 64);
 
   /* A = (Y1 - X1)*(Y2 - X2) mod p */
-  int_sub_mod(A, q1->y, q1->x);
-  int_sub_mod(H, q2->y, q2->x); /* H used as temp */
-  int_mul(A, A, H);
-  int_mod(A, A, mod255);
+  int_sub_mod((void *)A, (void *)q1->y, (void *)q1->x);
+  int_sub_mod((void *)H, (void *)q2->y, (void *)q2->x); /* H used as temp */
+  int_mul((void *)A, (void *)A, (void *)H);
+  int_mod((void *)A, (void *)A, (void *)mod255);
 
   /* B = (Y1 + X1)*(Y2 + X2) mod p */
-  int_add(H, q1->y, q1->x);
-  int_add(E, q2->y, q2->x); /* E used as temp */
-  int_mul(B, H, E);
-  int_mod(B, B, mod255);
+  int_add((void *)H, (void *)q1->y, (void *)q1->x);
+  int_add((void *)E, (void *)q2->y, (void *)q2->x); /* E used as temp */
+  int_mul((void *)B, (void *)H, (void *)E);
+  int_mod((void *)B, (void *)B, (void *)mod255);
 
   /* C = (T1 * 2 * d * T2) mod p  →  C = T1 * (2*d) * T2  mod p */
-  int_mul(C, q1->t, twod);
-  int_mod(C, C, mod255);
-  int_mul(C, C, q2->t);
-  int_mod(C, C, mod255);
+  int_mul((void *)C, (void *)q1->t, (void *)twod);
+  int_mod((void *)C, (void *)C, (void *)mod255);
+  int_mul((void *)C, (void *)C, (void *)q2->t);
+  int_mod((void *)C, (void *)C, (void *)mod255);
 
   /* D = (Z1 * 2 * Z2) mod p  →  D = 2 * Z1 * Z2  mod p */
-  int_mul(D, two, q1->z);
-  int_mod(D, D, mod255);
-  int_mul(D, D, q2->z);
-  int_mod(D, D, mod255);
+  int_mul((void *)D, (void *)two, (void *)q1->z);
+  int_mod((void *)D, (void *)D, (void *)mod255);
+  int_mul((void *)D, (void *)D, (void *)q2->z);
+  int_mod((void *)D, (void *)D, (void *)mod255);
 
   /* E = (B - A) mod p */
-  int_sub_mod(E, B, A);
+  int_sub_mod((void *)E, (void *)B, (void *)A);
 
   /* F = (D - C) mod p */
-  int_sub_mod(F, D, C);
+  int_sub_mod((void *)F, (void *)D, (void *)C);
 
   /* G = (D + C) mod p */
-  int_add(G, D, C);
-  int_mod(G, G, mod255);
+  int_add((void *)G, (void *)D, (void *)C);
+  int_mod((void *)G, (void *)G, (void *)mod255);
 
   /* H = (B + A) mod p */
-  int_add(H, B, A);
-  int_mod(H, H, mod255);
+  int_add((void *)H, (void *)B, (void *)A);
+  int_mod((void *)H, (void *)H, (void *)mod255);
 
   /* X3 = E * F mod p */
-  int_mul(out->x, E, F);
-  int_mod(out->x, out->x, mod255);
+  int_mul((void *)out->x, (void *)E, (void *)F);
+  int_mod((void *)out->x, (void *)out->x, (void *)mod255);
 
   /* Y3 = G * H mod p */
-  int_mul(out->y, G, H);
-  int_mod(out->y, out->y, mod255);
+  int_mul((void *)out->y, (void *)G, (void *)H);
+  int_mod((void *)out->y, (void *)out->y, (void *)mod255);
 
   /* T3 = E * H mod p */
-  int_mul(out->t, E, H);
-  int_mod(out->t, out->t, mod255);
+  int_mul((void *)out->t, (void *)E, (void *)H);
+  int_mod((void *)out->t, (void *)out->t, (void *)mod255);
 
   /* Z3 = F * G mod p */
-  int_mul(out->z, F, G);
-  int_mod(out->z, out->z, mod255);
+  int_mul((void *)out->z, (void *)F, (void *)G);
+  int_mod((void *)out->z, (void *)out->z, (void *)mod255);
 
   if (log || 1) {
     // puts("add result:");
@@ -145,51 +149,51 @@ void double_ge(ge *out, const ge *q) {
   u8 XY[64], two[64] = {2};
 
   /* A = X1^2 mod p */
-  int_mul(A, q->x, q->x);
-  int_mod(A, A, mod255);
+  int_mul((void *)A, (void *)q->x, (void *)q->x);
+  int_mod((void *)A, (void *)A, (void *)mod255);
 
   /* B = Y1^2 mod p */
-  int_mul(B, q->y, q->y);
-  int_mod(B, B, mod255);
+  int_mul((void *)B, (void *)q->y, (void *)q->y);
+  int_mod((void *)B, (void *)B, (void *)mod255);
 
   /* C = 2*Z1^2 mod p  →  C = 2*(Z1^2) mod p */
-  int_mul(C, q->z, q->z);
-  int_mod(C, C, mod255);
-  int_mul(C, two, C);
-  int_mod(C, C, mod255);
+  int_mul((void *)C, (void *)q->z, (void *)q->z);
+  int_mod((void *)C, (void *)C, (void *)mod255);
+  int_mul((void *)C, (void *)two, (void *)C);
+  int_mod((void *)C, (void *)C, (void *)mod255);
 
   /* H = A + B mod p */
-  int_add(H, A, B);
-  int_mod(H, H, mod255);
+  int_add((void *)H, (void *)A, (void *)B);
+  int_mod((void *)H, (void *)H, (void *)mod255);
 
   /* E = H - (X1+Y1)^2 mod p  →  first (X1+Y1)^2 */
-  int_add(XY, q->x, q->y);
-  int_mul(XY, XY, XY);
-  int_mod(XY, XY, mod255);
-  int_sub_mod(E, H, XY); /* E = H - (X1+Y1)^2 */
+  int_add((void *)XY, (void *)q->x, (void *)q->y);
+  int_mul((void *)XY, (void *)XY, (void *)XY);
+  int_mod((void *)XY, (void *)XY, (void *)mod255);
+  int_sub_mod((void *)E, (void *)H, (void *)XY); /* E = H - (X1+Y1)^2 */
 
   /* G = A - B mod p */
-  int_sub_mod(G, A, B);
+  int_sub_mod((void *)G, (void *)A, (void *)B);
 
   /* F = C + G mod p */
-  int_add(F, C, G);
-  int_mod(F, F, mod255);
+  int_add((void *)F, (void *)C, (void *)G);
+  int_mod((void *)F, (void *)F, (void *)mod255);
 
   /* X3 = E * F mod p */
-  int_mul(out->x, E, F);
-  int_mod(out->x, out->x, mod255);
+  int_mul((void *)out->x, (void *)E, (void *)F);
+  int_mod((void *)out->x, (void *)out->x, (void *)mod255);
 
   /* Y3 = G * H mod p */
-  int_mul(out->y, G, H);
-  int_mod(out->y, out->y, mod255);
+  int_mul((void *)out->y, (void *)G, (void *)H);
+  int_mod((void *)out->y, (void *)out->y, (void *)mod255);
 
   /* T3 = E * H mod p */
-  int_mul(out->t, E, H);
-  int_mod(out->t, out->t, mod255);
+  int_mul((void *)out->t, (void *)E, (void *)H);
+  int_mod((void *)out->t, (void *)out->t, (void *)mod255);
 
   /* Z3 = F * G mod p */
-  int_mul(out->z, F, G);
-  int_mod(out->z, out->z, mod255);
+  int_mul((void *)out->z, (void *)F, (void *)G);
+  int_mod((void *)out->z, (void *)out->z, (void *)mod255);
 
   // puts("A:");
   // buff_dump(A, 64);
@@ -251,7 +255,7 @@ void ge_mul(ge *q, const u8 s[32], const ge *p) {
     b = s[byte];
     // for (int bit = 0; bit < 8; ++bit) {
     for (int bit = 7; bit >= 0; bit--) {
-      printf("step %u\r\n", 255 - (byte * 8 + bit));
+      printf("step %u\n", 255 - (byte * 8 + bit));
 
       if (!((b >> bit) & 1)) { /* bit = 0 */
         // printf("0");
@@ -305,9 +309,7 @@ void raw_pub_from_raw_material(uint8_t *out, const uint8_t *mat) {
   // mat[31] &= 127;
   // mat[31] |= 64;
 
-  puts("ge_mul(&Q, mat, &G_4);");
   ge_mul(&Q, mat, &G_4);
-  puts("extended_homogeneous_to_affine(x, y, &Q);");
   extended_homogeneous_to_affine(x, y, &Q);
 
   // puts("raw: middle result:");
@@ -328,8 +330,8 @@ void raw_pub_from_raw_material64(uint8_t *out, const uint8_t *mat) {
       0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
   u8 s64[64];
 
-  puts("int_mod(s64, mat, L64);");
-  int_mod(s64, mat, L64);
-  puts("raw_pub_from_raw_material(out, s64);");
+  int_mod((void *)s64, (void *)mat, (void *)L64);
   raw_pub_from_raw_material(out, s64);
 }
+
+#endif

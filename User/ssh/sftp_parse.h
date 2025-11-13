@@ -46,9 +46,16 @@
 #define SSH_FX_CONNECTION_LOST 7
 #define SSH_FX_OP_UNSUPPORTED 8
 
+#define SSH_FXF_READ 1
+#define SSH_FXF_WRITE 2
+#define SSH_FXF_APPEND 4
+#define SSH_FXF_CREAT 8
+#define SSH_FXF_TRUNC 16
+#define SSH_FXF_EXCL 32
+
 // restriction to the sftp packet length field. this is to restrict mass heap
 // allocation and DO NOT affect the CHANNEL_DATA message size or max packet size
-#define SFTP_CHUNK ((int)1024 * 3)
+#define SFTP_CHUNK ((int)1024 * 1)
 
 void sftp_parser_init();
 

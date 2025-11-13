@@ -141,7 +141,7 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
     puts("verifying tag:...");
     // buff_dump(tag, 16);
 
-    buff_dump(expected_tag, 16); // not equal
+    // buff_dump(expected_tag, 16); // not equal?
     assert(memcmp(tag, expected_tag, 16) == 0);
   }
   // dec packet

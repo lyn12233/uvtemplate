@@ -54,7 +54,7 @@ loop2:
     printf("filesystem: mount error: %d\r\n", fr);
     puts("filesystem: mount retry...");
     vTaskDelay(pdMS_TO_TICKS(1000));
-    goto loop2;
+    goto loop;
   }
 
   vTaskDelete(NULL);

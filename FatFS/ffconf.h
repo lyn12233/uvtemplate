@@ -12,7 +12,7 @@
 #define FF_FS_MINIMIZE 0 // full api
 #define FF_USE_FIND 0
 #define FF_USE_MKFS 0
-#define FF_USE_FASTSEEK 1 //
+#define FF_USE_FASTSEEK 0 //
 #define FF_USE_EXPAND 0
 #define FF_USE_CHMOD 0
 #define FF_USE_LABEL 0
@@ -35,7 +35,8 @@
 #define FF_LFN_BUF FF_MAX_LFN
 #define FF_SFN_BUF 12
 
-#define FF_FS_RPATH 1
+// #define FF_FS_RPATH 0 // disable relative path
+#define FF_FS_RPATH 2 // enable all relative path funcs
 #define FF_PATH_DEPTH 8
 
 /*---------------------------------------------------------------------------/

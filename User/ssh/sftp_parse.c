@@ -371,9 +371,9 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
 
     sftp_handle p = *(sftp_handle *)(pkt->buff + 9);
     uint64_t offs = ntohll(*(uint64_t *)(pkt->buff + 9 + fp_size));
-    uint32_t len = ntohll(*(uint64_t *)(pkt->buff + 9 + fp_size + 8));
+    uint32_t len = ntohl(*(uint32_t *)(pkt->buff + 9 + fp_size + 8));
     if (len > SFTP_CHUNK) {
-      printf("FXP_WRITE: read too long %u\r\n", len);
+      printf("FXP_WRITE: write too long %u\r\n", len);
       send_status(sock, ctx, id, SSH_FX_FAILURE, "write too long");
       return;
     }
@@ -384,15 +384,19 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
 
     // call fatfs: seek+write
     FRESULT fr;
+    printf("FXP_WRITE: seek %u (handle=%u)\r\n", (uint32_t)offs,
+           (uint32_t)(uint64_t)p.fp);
     fr = f_lseek(p.fp, (FSIZE_t)offs);
     if (fr) {
-      printf("FXP_READ: seek failed %u\r\n", fr);
+      printf("FXP_WRITE: seek failed %u\r\n", fr);
       send_status(sock, ctx, id, SSH_FX_FAILURE, "seek failed");
       return;
     }
 
     const void *pdata = pkt->buff + 9 + fp_size + 12;
+    printf("FXP_WRITE: %u bytes", len);
     fr = f_write(p.fp, pdata, len, &len);
+    printf("FXP_WRITE: actually write %u\r\n", len);
     if (fr) {
       printf("FXP_WRITE: failed %u\r\n", fr);
       send_status(sock, ctx, id, SSH_FX_FAILURE, "fatfs fail");

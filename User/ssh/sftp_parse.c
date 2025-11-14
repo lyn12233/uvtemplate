@@ -28,14 +28,22 @@ uint8_t dpch_state;
 uint32_t dpch_len;
 uint32_t dpch_cnt;
 
+uint8_t last_cmd_write;
+FIL *last_fp;
+uint64_t last_offs;
+uint32_t last_id;
+
 void sftp_parser_init() {
   //
   vstr_init(&chnldat, 0);
   vstr_init(&pre_send_data, 0);
-  sftp_init_done = 1;
   dpch_state = DS_LEN;
   dpch_len = 4;
   dpch_cnt = 0;
+
+  last_cmd_write = 0;
+
+  sftp_init_done = 1;
 }
 
 void sftp_parse(int sock, ssh_context *ctx, QueueHandle_t q,
@@ -111,6 +119,10 @@ void sftp_parse(int sock, ssh_context *ctx, QueueHandle_t q,
   vstr_delete(recvd);
 }
 
+static void continue_write(int sock, ssh_context *ctx, const vstr_t *pkt);
+static void send_status(int sock, ssh_context *ctx, uint32_t id,
+                        uint32_t status, const char *msg);
+
 void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
                    int *should_close) { //
   // printf("dispatch: %x\r\n", c);
@@ -127,8 +139,13 @@ void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
       vstr_clear(&chnldat);
 
       if (dpch_len > SFTP_CHUNK) {
-        puts("sftp error: pkt too big");
-        *should_close = 1;
+        puts("sftp warn: pkt too big");
+        // *should_close = 1;
+        dpch_cnt = 0;
+        dpch_state = DS_REG;
+
+        last_cmd_write = 0;
+
         return;
       }
 
@@ -141,8 +158,25 @@ void sftp_dispatch(int sock, ssh_context *ctx, uint8_t c,
     vbuff_iaddc(&chnldat, c);
     dpch_cnt++;
 
-    if (dpch_cnt >= dpch_len) {
-      sftp_dispatch_spkt(sock, ctx, &chnldat, should_close);
+    if (dpch_cnt % SFTP_CHUNK == 0 && dpch_cnt < dpch_len) {
+
+      if (dpch_cnt == SFTP_CHUNK) {
+        sftp_dispatch_spkt(sock, ctx, &chnldat, should_close);
+        vstr_clear(&chnldat);
+      } else {
+        puts("sftp: continue write");
+        continue_write(sock, ctx, &chnldat);
+        vstr_clear(&chnldat);
+      }
+
+    } else if (dpch_cnt >= dpch_len) {
+      if (dpch_cnt > SFTP_CHUNK) {
+        continue_write(sock, ctx, &chnldat);
+        // send_status(sock, ctx, last_id, SSH_FX_OK, "");
+        puts("sftp: continue write done");
+      } else {
+        sftp_dispatch_spkt(sock, ctx, &chnldat, should_close);
+      }
       vstr_clear(&chnldat);
       dpch_cnt = 0, dpch_len = 4;
       dpch_state = DS_LEN;
@@ -372,10 +406,15 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     sftp_handle p = *(sftp_handle *)(pkt->buff + 9);
     uint64_t offs = ntohll(*(uint64_t *)(pkt->buff + 9 + fp_size));
     uint32_t len = ntohl(*(uint32_t *)(pkt->buff + 9 + fp_size + 8));
-    if (len > SFTP_CHUNK) {
-      printf("FXP_WRITE: write too long %u\r\n", len);
-      send_status(sock, ctx, id, SSH_FX_FAILURE, "write too long");
-      return;
+    if (9 + fp_size + 12 + len > pkt->len) {
+      // indicates packet trimmed
+      printf("FXP_WRITE: write too long %u exceeds packet %u\r\n", len,
+             pkt->len);
+      // send_status(sock, ctx, id, SSH_FX_FAILURE, "write too long");
+      len = pkt->len - (9 + fp_size + 12);
+      last_cmd_write = 1, last_fp = p.fp, last_offs = offs + len;
+      last_id = id;
+      // return;
     }
     if (p.is_dp) {
       puts("FXP_WRITE: a dir handle");
@@ -394,7 +433,7 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     }
 
     const void *pdata = pkt->buff + 9 + fp_size + 12;
-    printf("FXP_WRITE: %u bytes", len);
+    printf("FXP_WRITE: %u bytes\r\n", len);
     fr = f_write(p.fp, pdata, len, &len);
     printf("FXP_WRITE: actually write %u\r\n", len);
     if (fr) {
@@ -404,6 +443,7 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     }
 
     // send
+    puts("FXP_WRITE: sending ok");
     send_status(sock, ctx, id, SSH_FX_OK, "");
 
     puts("FXP_WRITE: done");
@@ -680,6 +720,33 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
   }
 }
 
+static void continue_write(int sock, ssh_context *ctx, const vstr_t *pkt) {
+  puts("FXP_WRITE: continue");
+
+  if (!last_cmd_write) {
+    puts("sftp: unknown cmd too long, skip..");
+    return;
+  }
+
+  FRESULT fr;
+  fr = f_lseek(last_fp, last_offs);
+  if (!fr) {
+    printf("continue_write: failed seek %u\r\n", (uint32_t)last_offs);
+    // last_cmd_write = 0;
+    // return;
+  }
+  uint32_t dummy;
+  fr = f_write(last_fp, pkt->buff, pkt->len, &dummy);
+  printf("FXP_WRITE: continue write %u bytes\r\n", dummy);
+  if (!fr) {
+    puts("continue_write: failed write");
+    // last_cmd_write = 0;
+    // return;
+  }
+
+  last_offs += pkt->len;
+}
+
 ///@todo: consider size overflow
 static void sftp_send_pkt(int sock, ssh_context *ctx, const vstr_t *buff) {
   vstr_t payload; // ssh payload (channel data)
@@ -763,7 +830,10 @@ static void send_data(int sock, ssh_context *ctx, uint32_t id, const void *data,
   vbuff_iaddu32(&buff, len);
   vbuff_iadd(&buff, data, len);
 
+  // const vstr_t buff2 = (vstr_t){.len = len, .data = (void *)data};
+
   sftp_send_pkt(sock, ctx, &buff);
+  // sftp_send_pkt(sock, ctx, &buff2);
 
   vstr_clear(&buff);
 }

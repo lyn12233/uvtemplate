@@ -55,7 +55,7 @@
 
 // restriction to the sftp packet length field. this is to restrict mass heap
 // allocation and DO NOT affect the CHANNEL_DATA message size or max packet size
-#define SFTP_CHUNK ((int)1024 * 1)
+#define SFTP_CHUNK ((int)400)
 
 void sftp_parser_init();
 

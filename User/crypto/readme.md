@@ -14,3 +14,9 @@ most sources are from openssh(further take roots in openbsd or supercop)
 - `poly1305`: mac(message authentication code algorithm) standard impl, from openssh
 - `sha2`: sha256 and sha512 impl
 - `smul_curve25519_ref.c`: kex(key exchange algorithm) core function standard impl, from openssh
+
+config:
+
+| macro         | value   | description                   |
+| ------------- | ------- | ----------------------------- |
+| USE_CRYPTO_V2 | <unset> | use self-defined ed25519 impl |

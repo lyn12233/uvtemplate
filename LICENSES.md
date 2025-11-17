@@ -18,6 +18,12 @@ this repository contains both original code and code derived from third party so
 - **Location**: `Drivers/STM32xx_HAL_Driver/`
 - **Notes**: Please refer to the original LICENSE file in the HAL directory
 
+## FatFS
+- **Source**: ChaN ([elm-chan.org](http://elm-chan.org))
+- **License**: BSD-style (FatFS license)
+- **Location**: `FatFS/`
+- **Notes**: Please refer to the original licenses provided as leading comments in FatFS source files.
+
 ### FreeRTOS Kernel
 - **Source**: Amazon Web Services (formerly Real Time Engineers Ltd.)
 - **License**: MIT
@@ -29,6 +35,12 @@ this repository contains both original code and code derived from third party so
 - **License**: MIT
 - **Location**: `IOLibrary/`
 - **Notes**: Please refer to the original LICENSE file in the FreeRTOS directory
+
+### OpenSSH
+- **Source**: OpenSSH
+- **License**: BSD-style
+- **Location**: (distributed, as single files)
+- **Notes**: Please refer to the original licenses provided as leading comments in OpenSSH derived files. These files mainly include cryptographic functions in `User/crypto/`.
 
 ## Usage Requirements
 When distributing this project, you must include all original license notices from each component.

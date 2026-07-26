@@ -49,8 +49,7 @@ void consume_ecdh_init(int sock, ssh_context *ctx, int *done) {
                               LEN_ECHDINIT_TYPES);
 
   vstr_clear(&vbuff);
-  (void)vbuff;
-
+  
   // repr
   printf("packet received length %d, payload:\n", (int)payload_len);
   vo_repr(otmp);
@@ -67,8 +66,7 @@ void consume_ecdh_init(int sock, ssh_context *ctx, int *done) {
   vbuff_iadd(&ctx->q_c, otmp->vlist.data[1].vstr.data, 32);
 
   vo_delete(otmp);
-  (void)otmp;
-
+  
   // post-consume: generate a random b(server ehpemeral priv),
   // then generate Q_s, K
   puts("consume_ecdh_init: post consume");
@@ -149,23 +147,20 @@ void send_ecdh_reply(int sock, ssh_context *ctx, int *done) {
   vbuff_iadd(&tmp, s.data, s.len);
 
   vstr_clear(&s);
-  (void)s;
-
+  
   // create packet
   vstr_t *packet = payload2packet(&tmp, 4);
   printf("ecdh reply package len: %d\r\n", packet->len);
 
   vstr_clear(&tmp);
-  (void)tmp;
-
+  
   uint32_t len_to_send = htonl(packet->len);
   const vstr_t vsend = (vstr_t){.len = 4, .buff = (void *)&len_to_send};
   sock_send(sock, &vsend, 4, 0);
   sock_send(sock, packet, packet->len, 0);
 
   vstr_delete(packet);
-  (void)packet;
-
+  
   // post-process: assign sid, calc key a-f
   if (ctx->first_kex) {
     puts("ecdh: create session_id and init seq_num once");
@@ -212,8 +207,7 @@ void exchange_msg_newkey(int sock, int *done) {
   vstr_t *packet = payload2packet(&tmp, 4);
 
   // vstr_clear(&tmp);
-  // (void)tmp;
-
+  // 
   uint32_t len_to_send = htonl(packet->len);
   const vstr_t vsend = (vstr_t){.len = 4, .buff = (void *)&len_to_send};
   sock_send(sock, &vsend, 4, 0);
@@ -221,8 +215,7 @@ void exchange_msg_newkey(int sock, int *done) {
   puts("sent newkey message");
 
   vstr_delete(packet);
-  (void)packet;
-
+  
   // consume newkeys
 
   uint32_t payload_len;

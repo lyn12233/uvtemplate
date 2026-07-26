@@ -22,8 +22,7 @@ void respond_auth_service(int sock, ssh_context *ctx, int *done) {
   );
 
   vstr_delete(recvd);
-  (void)recvd;
-
+  
   const vstr_t *method = &vo->vlist.data[1].vstr;
   printf("expect ssh-userauth ? %.*s\r\n", method->len, method->data);
   if (method->len == 12 && memcmp(method->data, "ssh-userauth", 12) == 0) {
@@ -43,13 +42,11 @@ void respond_auth_service(int sock, ssh_context *ctx, int *done) {
   vstr_t *payload = payload_encode(vo);
 
   vo_delete(vo);
-  (void)vo;
-
+  
   vstr_t *packet = payload2packet(payload, 16);
 
   vstr_delete(payload);
-  (void)payload;
-
+  
   puts("userauth: send packet:");
   vbuff_dump(packet);
   send_packet_enc(sock, ctx, packet->data, packet->len);
@@ -74,8 +71,7 @@ void respond_userauth(int sock, ssh_context *ctx, int *done, int *half) {
   );
 
   vstr_delete(recvd);
-  (void)recvd;
-
+  
   const vstr_t *method = &vo->vlist.data[3].vstr;
   printf("userauth: method: %.*s", method->len, method->data);
   if (memcmp(method->data, "none", 4) == 0) {

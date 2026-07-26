@@ -281,8 +281,7 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     fr = f_open(fp, path.data, flag2); // mode?
 
     vstr_clear(&path);
-    (void)path;
-
+    
     if (fr) {
       printf("FXP_OPEN: file open failed with %x\r\n", (uint32_t)fr);
       free(fp);
@@ -478,8 +477,7 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     fr = f_opendir(dp, path.data);
 
     vstr_clear(&path);
-    (void)path;
-
+    
     if (fr) {
       printf("FXP_OPENDIR: failed %u\r\n", fr);
       free(dp);
@@ -578,8 +576,7 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
     fr = f_unlink(path.data);
 
     vstr_clear(&path);
-    (void)path;
-
+    
     if (fr) {
       printf("FXP_REMOVE: failed %u\r\n", fr);
       send_status(sock, ctx, id, SSH_FX_FAILURE, "fatfs fail");
@@ -668,15 +665,13 @@ void sftp_dispatch_spkt(int sock, ssh_context *ctx, const vstr_t *pkt,
       printf("FXP_(L)STAT: failed %u with path [len=%u]%s\r\n", fr, path.len,
              path.data);
       vstr_clear(&path);
-      (void)path;
-
+      
       send_status(sock, ctx, id, SSH_FX_FAILURE, "stat fail");
       return;
     }
 
     vstr_clear(&path);
-    (void)path;
-
+    
     // pressent size(u64) and perm(u32), u8 u32 u32(1|4) u64 u32
 
     vstr_t buff;
@@ -764,8 +759,7 @@ static void sftp_send_pkt(int sock, ssh_context *ctx, const vstr_t *buff) {
   vstr_t *packet = payload2packet(&payload, 16);
 
   vstr_clear(&payload);
-  (void)payload;
-
+  
   send_packet_enc(sock, ctx, packet->data, packet->len);
 
   vstr_delete(packet);

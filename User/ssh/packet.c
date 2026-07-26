@@ -42,7 +42,6 @@ int recv_packet(           //
   printf("Debug: total_packet_length = %u\n", packet_length_);
 
   vstr_clear(&vtmp);
-  (void)vtmp;
 
   // validate packet length
   if (packet_length_ < 1 + 4) { // padding_length(1) + min_padding(4)
@@ -128,7 +127,6 @@ vstr_t *recv_packet_enc(int sock, ssh_context *ctx) {
   main_recv.len = 4; // recv offs
 
   vstr_clear(&hdr_recv);
-  (void)hdr_recv;
 
   sock_recv(sock, &main_recv, len + 16, 0);
 

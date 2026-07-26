@@ -22,7 +22,6 @@ void sftp_task(void *p) {
   vstr_t *pre_recv = p2->pre_recv; // move assign
 
   free(p);
-  (void)p, (void)q;
 
   // option b: receive a whole sftp chunk and parse it
   vstr_t buff;

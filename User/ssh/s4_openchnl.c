@@ -21,8 +21,7 @@ void consume_openchannel(int sock, ssh_context *ctx, int *done) {
   vo_t *vo = payload_decode(&recvd->buff[1], recvd->len, chnlop_types, 5);
 
   vstr_delete(recvd);
-  (void)recvd;
-
+  
   const vstr_t *pstr = &vo->vlist.data[1].vstr;
   printf("expected channel type session: %.*s\r\n", pstr->len, pstr->data);
   if (pstr->len == 7 && strncmp("session", pstr->data, 7) == 0) {
@@ -85,8 +84,7 @@ void respond_chnlreq(int sock, ssh_context *ctx, int *done) {
   vo = payload_decode(&recvd->buff[1], recvd->len, chnlreq_subsys_types, 5);
 
   vstr_delete(recvd);
-  (void)recvd;
-
+  
   int want_reply = vo->vlist.data[3].u8;
   printf("want reply: %d\n", want_reply);
 
